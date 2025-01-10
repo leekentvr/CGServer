@@ -22,10 +22,9 @@
 
 #define MAX_CLIENTS 10
 SOCKET clientSockets[MAX_CLIENTS]; // Array to hold client sockets
+
 int clientCount = 0; // Current number of connected clients
 CRITICAL_SECTION cs; // Critical section for thread safety
-
-
 
 #define RED   "\x1B[31m"
 #define GRN   "\x1B[32m"
@@ -63,6 +62,7 @@ void writeToLog(std::string& topic)
 // Function to handle communication with the client
 DWORD WINAPI ClientHandler(LPVOID lpParam) {
     SOCKET clientSocket = (SOCKET)lpParam;
+
     char buffer[BUFFER_SIZE];
 
     while (1) {

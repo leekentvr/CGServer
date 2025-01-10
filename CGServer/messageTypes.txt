@@ -1,0 +1,20 @@
+
+Message Events
+
+Each message event is encoded bytes.
+
+The first value is the message type as 2 byte int.
+The second value is the total packet size.
+The rest is the packet payload.
+
+Messages
+
+0 SetClientType
+	0 = AreaManager. -> Sends fused data to server.
+	1 = Client / VR HMD. -> Recieves fused data from the server.
+
+1 StringMessageToDistribute
+	Size of message
+
+2 Skeleton
+	Compressed
