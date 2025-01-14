@@ -26,20 +26,20 @@ SOCKET clientSockets[MAX_CLIENTS]; // Array to hold client sockets
 int clientCount = 0; // Current number of connected clients
 CRITICAL_SECTION cs; // Critical section for thread safety
 
-#define RED   "\x1B[31m"
-#define GRN   "\x1B[32m"
-#define YEL   "\x1B[33m"
-#define MAG   "\x1B[35m"
-#define RESET "\x1B[0m"
+#define REDCOLOUR   "\x1B[31m"
+#define GREENCOLOUR   "\x1B[32m"
+#define YELLOWCOLOUR   "\x1B[33m"
+#define MAGENTACOLOUR   "\x1B[35m"
+#define RESETCOLOUR "\x1B[0m"
 
 // Toggle functions
-bool SENDJOINTSVIAUDP = false;      // Send Joints via UDP. Sets up sockets and sends data using UDP
 bool SENDJOINTSVIATCP = true;       // Send joints via TCP
 bool RECORDTIMESTAMPS = false;           // logs timestamps to outputFile
 
 const char* pkt = "Message to be sent\n";
 sockaddr_in dest;
 
+bool isServerShuttingDown = false;
 
 SOCKET serverSocket, clientSocket;
 #define BUFFER_SIZE 1024 //Max length of buffer
@@ -65,16 +65,15 @@ DWORD WINAPI ClientHandler(LPVOID lpParam) {
 
     char buffer[BUFFER_SIZE];
 
-    while (1) {
+    while (!isServerShuttingDown) {
         memset(buffer, 0, BUFFER_SIZE); // Clear the buffer
         int bytesReceived = recv(clientSocket, buffer, BUFFER_SIZE, 0);
         if (bytesReceived == SOCKET_ERROR) {
-            //fprintf(stderr, "\nReceive failed: %d\n", WSAGetLastError());
-            printf(RED "\nReceive failed or sudden disconnect : %d\n" RESET, WSAGetLastError());
+            printf(REDCOLOUR "Receive failed or sudden disconnect : %d\n" RESETCOLOUR, WSAGetLastError());
             break;
         }
         else if (bytesReceived == 0) {
-            printf(RED "\nClient disconnected.\n" RESET);
+            printf(REDCOLOUR "Client disconnected.\n" RESETCOLOUR);
             break;
         }
 
@@ -105,7 +104,7 @@ DWORD WINAPI ClientHandler(LPVOID lpParam) {
     // Remove the client socket from the list and close it
     EnterCriticalSection(&cs);
     for (int i = 0; i < clientCount; i++) {
-        if (clientSockets[i] == clientSocket) {
+        if (clientSockets[i] != clientSocket) {
             clientSockets[i] = clientSockets[--clientCount]; // Replace with last client
             break;
         }
@@ -123,14 +122,20 @@ DWORD WINAPI AcceptConnections(LPVOID lpParam) {
     struct sockaddr_in clientAddr;
     int addrLen = sizeof(clientAddr);
 
-    while (1) {
+    printf(GREENCOLOUR "Start Accept Connections\n" RESETCOLOUR);
+
+    while (!isServerShuttingDown) {
+
+        printf(GREENCOLOUR "Waiting for client connection...\n" RESETCOLOUR);
+
+        printf("> ");
         clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &addrLen);
         if (clientSocket == INVALID_SOCKET) {
-            fprintf(stderr, "Accept failed: %d\n", WSAGetLastError());
+            //fprintf(stderr, "Accept failed: %d\n", WSAGetLastError());
             continue; // Continue accepting other clients
         }
 
-        printf("\n%sClient connected!%s\n", "\033[32m", "\033[0m");
+        printf("%sClient connected!%s\n", "\033[32m", "\033[0m");
 
         // Add the client socket to the list
         EnterCriticalSection(&cs);
@@ -138,7 +143,7 @@ DWORD WINAPI AcceptConnections(LPVOID lpParam) {
             clientSockets[clientCount++] = clientSocket; // Add the new client
         }
         else {
-            printf(RED "\nMax clients reached. Connection refused.\n" RESET);
+            printf(REDCOLOUR "Max clients reached. Connection refused.\n" RESETCOLOUR);
             closesocket(clientSocket); // Reject connection
         }
         LeaveCriticalSection(&cs);
@@ -156,10 +161,24 @@ DWORD WINAPI AcceptConnections(LPVOID lpParam) {
     return 0;
 }
 
+void DisconnectAllClients() 
+{
+    isServerShuttingDown = true;
+
+    EnterCriticalSection(&cs);
+    for (int i = 0; i < clientCount; i++) {
+        shutdown(clientSockets[i], SD_BOTH); // Gracefully shutdown the connection
+        closesocket(clientSockets[i]);
+    }
+    clientCount = 0;
+    LeaveCriticalSection(&cs);
+}
+
 int main()
 {
     SOCKET socketToTransmit = NULL;
 
+    printf(GREENCOLOUR "Start Thread \n" RESETCOLOUR);
 
     if (SENDJOINTSVIATCP) {
         WSADATA wsaData;
@@ -210,19 +229,35 @@ int main()
         HANDLE acceptThread = CreateThread(NULL, 0, AcceptConnections, (LPVOID)serverSocket, 0, NULL);
         if (acceptThread == NULL) {
             fprintf(stderr, "Failed to create accept thread: %d\n", GetLastError());
+            DeleteCriticalSection(&cs);
             closesocket(serverSocket);
             WSACleanup();
             return 1;
         }
     }
 
-    //worker threads
-    std::vector<std::thread> workers;
+    char input[100]; // Buffer to store user input
 
+    // Infinite loop to keep the program running until "quit" is entered
+    while (1) {
+        printf("> ");
+        scanf_s("%99s", input); // Read input, limiting to 99 characters to prevent overflow    
+        if (strcmp(input, "help") == 0) {
+            printf("'quit' to exit program\n");
+        }
+        if (strcmp(input, "quit") == 0) {
+            break;
+        }
+    }
 
     if (SENDJOINTSVIATCP) {
         // Close sockets and clean up
-        DeleteCriticalSection(&cs);
+        isServerShuttingDown = true;
+
+        printf("Exiting the program.\n");
+        //DisconnectAllClients();
+
+        //DeleteCriticalSection(&cs);
         closesocket(serverSocket);
         WSACleanup();
     }
