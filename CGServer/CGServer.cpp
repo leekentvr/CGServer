@@ -20,7 +20,7 @@
 #define PORT 33333	//The port on which to listen for incoming data
 //#define PORT 8844	//The port on which to listen for incoming data
 
-#define MAX_CLIENTS 10
+#define MAX_CLIENTS 12
 SOCKET clientSockets[MAX_CLIENTS]; // Array to hold client sockets
 
 int clientCount = 0; // Current number of connected clients
@@ -30,6 +30,7 @@ CRITICAL_SECTION cs; // Critical section for thread safety
 #define GREENCOLOUR   "\x1B[32m"
 #define YELLOWCOLOUR   "\x1B[33m"
 #define MAGENTACOLOUR   "\x1B[35m"
+
 #define RESETCOLOUR "\x1B[0m"
 
 // Toggle functions
@@ -43,21 +44,6 @@ bool isServerShuttingDown = false;
 
 SOCKET serverSocket, clientSocket;
 #define BUFFER_SIZE 1024 //Max length of buffer
-
-void writeToLog(std::string& topic)
-{
-    // Get the current time
-    auto currentTime = std::chrono::system_clock::now();
-
-    // Get time since epoch in microseconds and convert to string
-    auto durationMillis = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime.time_since_epoch());
-
-    std::string duractionMilliAsString = std::to_string(durationMillis.count());
-
-    // Print to the text file / log
-    //outputFile << topic + "," + duractionMilliAsString + "\n";
-}
-
 
 // Function to handle communication with the client
 DWORD WINAPI ClientHandler(LPVOID lpParam) {
@@ -86,9 +72,9 @@ DWORD WINAPI ClientHandler(LPVOID lpParam) {
         std::vector<uint8_t> packetToTransmit;
 
         // Copy the good bytes bytes manually using a loop
-        //for (int i = 0; i < packetSendSize; ++i) {
-        //    packetToTransmit.push_back(buffer[i]);
-        //}
+        for (int i = 0; i < packetSendSize; ++i) {
+            packetToTransmit.push_back(buffer[i]);
+        }
 
         // Broadcast message to all clients
         EnterCriticalSection(&cs);
@@ -122,11 +108,11 @@ DWORD WINAPI AcceptConnections(LPVOID lpParam) {
     struct sockaddr_in clientAddr;
     int addrLen = sizeof(clientAddr);
 
-    printf(GREENCOLOUR "Start Accept Connections\n" RESETCOLOUR);
+    printf("Start Accepting Connections\n");
 
     while (!isServerShuttingDown) {
 
-        printf(GREENCOLOUR "Waiting for client connection...\n" RESETCOLOUR);
+        printf("Waiting for client connection...\n");
 
         printf("> ");
         clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &addrLen);
@@ -135,7 +121,7 @@ DWORD WINAPI AcceptConnections(LPVOID lpParam) {
             continue; // Continue accepting other clients
         }
 
-        printf("%sClient connected!%s\n", "\033[32m", "\033[0m");
+        printf(GREENCOLOUR "Client connected!\n" RESETCOLOUR);
 
         // Add the client socket to the list
         EnterCriticalSection(&cs);
