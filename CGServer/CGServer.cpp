@@ -13,7 +13,6 @@
 #include <chrono>                   // For timestamps
 #include<winsock2.h>                // For UDP / TCP
 #include <Ws2tcpip.h>               // For UDP / TCP
-#include <ws2tcpip.h>               // For inet_addr and other functions
 
 #pragma comment(lib,"ws2_32.lib")   //Winsock Library
 
@@ -45,9 +44,16 @@ bool isServerShuttingDown = false;
 SOCKET serverSocket, clientSocket;
 #define BUFFER_SIZE 1024 //Max length of buffer
 
+// Global variables
+std::map<SOCKET, std::string> clientNames;
+
 // Function to handle communication with the client
 DWORD WINAPI ClientHandler(LPVOID lpParam) {
+
     SOCKET clientSocket = (SOCKET)lpParam;
+
+    // To assign client name
+    std::string clientName = clientNames[clientSocket];
 
     char buffer[BUFFER_SIZE];
 
@@ -63,25 +69,60 @@ DWORD WINAPI ClientHandler(LPVOID lpParam) {
             break;
         }
 
-        // What is the recieved event
+        //// What is the recieved event
         int thisevent = (buffer[1] << 8) | buffer[0];
         // What is the total packet size
-        int packetSendSize = (buffer[3] << 8) | buffer[2];
+        int packetStringLength = (buffer[3] << 8) | buffer[2];
 
-        // Create a new packet to broadcast
-        std::vector<uint8_t> packetToTransmit;
 
-        // Copy the good bytes bytes manually using a loop
-        for (int i = 0; i < packetSendSize; ++i) {
-            packetToTransmit.push_back(buffer[i]);
+        // Convert buffer to string, ignoring first 5 bytes
+        std::string receivedData(buffer + 3, packetStringLength);
+
+        // Print the buffer contents
+        //printf("Received from %s: ", clientName.c_str());
+
+        switch (thisevent)
+        {
+        case 0:
+            //printf("Received event 0, NewSkeleton\n");
+            break;
+        case 1:
+            printf("Received event 1, HMDPosition\n");
+            break;
+        case 2:
+            printf("Received event 2, SimpleString\n");
+            printf("Received string from %s: %s\n", clientName.c_str(), receivedData.c_str());
+            break;
+        case 3:
+            printf("Received event 3, IdentifySelfToServer\n");
+            printf("Received string from %s: %s\n", clientName.c_str(), receivedData.c_str());
+            break;
+        default:
+            break;
         }
+        //// Create a new packet to broadcast
+        //std::vector<uint8_t> packetToTransmit;
+
+        //// Copy the good bytes bytes manually using a loop
+        //for (int i = 0; i < packetSendSize; ++i) {
+        //    packetToTransmit.push_back(buffer[i]);
+        //}
+        
+
+        //for (int i = 0; i < bytesReceived; ++i) {
+        //    printf("%02X ", static_cast<unsigned char>(buffer[i]));
+        //}
+        printf("\n");
+
+        bool SendToSelf = true;
 
         // Broadcast message to all clients
         EnterCriticalSection(&cs);
         for (int i = 0; i < clientCount; i++) {
-            if (clientSockets[i] != clientSocket) { // Don't send back to the sender
+            if (clientSockets[i] != clientSocket or SendToSelf == true) { // Don't send back to the sender
                 //send(clientSockets[i], buffer, bytesReceived, 0);
-                send(clientSockets[i], reinterpret_cast<const char*>(buffer), packetSendSize, 0);
+                printf("Sending to client %s\n", clientNames[clientSockets[i]].c_str());
+                send(clientSockets[i], reinterpret_cast<const char*>(buffer), bytesReceived, 0);
             }
         }
         LeaveCriticalSection(&cs);
@@ -90,11 +131,13 @@ DWORD WINAPI ClientHandler(LPVOID lpParam) {
     // Remove the client socket from the list and close it
     EnterCriticalSection(&cs);
     for (int i = 0; i < clientCount; i++) {
-        if (clientSockets[i] != clientSocket) {
+        if (clientSockets[i] == clientSocket) {
             clientSockets[i] = clientSockets[--clientCount]; // Replace with last client
+            clientNames.erase(clientSocket);
             break;
         }
     }
+
     LeaveCriticalSection(&cs);
 
     closesocket(clientSocket);
@@ -117,16 +160,19 @@ DWORD WINAPI AcceptConnections(LPVOID lpParam) {
         printf("> ");
         clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &addrLen);
         if (clientSocket == INVALID_SOCKET) {
-            //fprintf(stderr, "Accept failed: %d\n", WSAGetLastError());
             continue; // Continue accepting other clients
         }
 
         printf(GREENCOLOUR "Client connected!\n" RESETCOLOUR);
 
+        // Assign a name to the client
+        std::string clientName = "Client" + std::to_string(clientCount + 1);
+
         // Add the client socket to the list
         EnterCriticalSection(&cs);
         if (clientCount < MAX_CLIENTS) {
             clientSockets[clientCount++] = clientSocket; // Add the new client
+            clientNames[clientSocket] = clientName; // Assign the name to the client
         }
         else {
             printf(REDCOLOUR "Max clients reached. Connection refused.\n" RESETCOLOUR);
@@ -228,9 +274,6 @@ int main()
     while (1) {
         printf("> ");
         scanf_s("%99s", input); // Read input, limiting to 99 characters to prevent overflow    
-        if (strcmp(input, "help") == 0) {
-            printf("'quit' to exit program\n");
-        }
         if (strcmp(input, "quit") == 0) {
             break;
         }

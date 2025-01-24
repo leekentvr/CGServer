@@ -9,12 +9,24 @@ The rest is the packet payload.
 
 Messages
 
-0 SetClientType
-	0 = AreaManager. -> Sends fused data to server.
-	1 = Client / VR HMD. -> Recieves fused data from the server.
-
-1 StringMessageToDistribute
-	Size of message
-
-2 Skeleton
-	Compressed
+public enum MessageEvents
+{
+    // Events are transmitted as an int.
+    // Unpacking is different for each event.
+    NewSkeleton = 0, 
+    HMDPosition = 1,   
+    SimpleString = 2,
+    IdentifySelfToServer = 3
+}
+public enum ApplicationType
+{
+    Unknown = 0,
+    AreaManager = 1,
+    HMD = 2
+}
+public enum Rooms
+{
+    Unknown = 0,
+    ToyodaLab = 1,
+    CGLL = 2
+}
