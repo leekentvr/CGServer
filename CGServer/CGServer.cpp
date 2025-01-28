@@ -43,9 +43,7 @@ bool isServerShuttingDown = false;
 
 SOCKET serverSocket, clientSocket;
 #define BUFFER_SIZE 1024 //Max length of buffer
-
-// Global variables
-std::map<SOCKET, std::string> clientNames;
+std::map<SOCKET, std::string> clientNames; // Map of client names
 
 // Function to handle communication with the client
 DWORD WINAPI ClientHandler(LPVOID lpParam) {
@@ -74,12 +72,8 @@ DWORD WINAPI ClientHandler(LPVOID lpParam) {
         // What is the total packet size
         int packetStringLength = (buffer[3] << 8) | buffer[2];
 
-
         // Convert buffer to string, ignoring first 5 bytes
-        std::string receivedData(buffer + 3, packetStringLength);
-
-        // Print the buffer contents
-        //printf("Received from %s: ", clientName.c_str());
+        std::string receivedData(buffer + 4, packetStringLength - 1);
 
         switch (thisevent)
         {
@@ -96,6 +90,9 @@ DWORD WINAPI ClientHandler(LPVOID lpParam) {
         case 3:
             printf("Received event 3, IdentifySelfToServer\n");
             printf("Received string from %s: %s\n", clientName.c_str(), receivedData.c_str());
+            clientNames[clientSocket] = clientName + clientNames[clientSocket]; // Assign the name to the client
+
+
             break;
         default:
             break;
@@ -112,7 +109,7 @@ DWORD WINAPI ClientHandler(LPVOID lpParam) {
         //for (int i = 0; i < bytesReceived; ++i) {
         //    printf("%02X ", static_cast<unsigned char>(buffer[i]));
         //}
-        printf("\n");
+        //printf("\n");
 
         bool SendToSelf = true;
 
@@ -121,7 +118,7 @@ DWORD WINAPI ClientHandler(LPVOID lpParam) {
         for (int i = 0; i < clientCount; i++) {
             if (clientSockets[i] != clientSocket or SendToSelf == true) { // Don't send back to the sender
                 //send(clientSockets[i], buffer, bytesReceived, 0);
-                printf("Sending to client %s\n", clientNames[clientSockets[i]].c_str());
+                //printf("Sending to client %s\n", clientNames[clientSockets[i]].c_str());
                 send(clientSockets[i], reinterpret_cast<const char*>(buffer), bytesReceived, 0);
             }
         }
@@ -166,7 +163,7 @@ DWORD WINAPI AcceptConnections(LPVOID lpParam) {
         printf(GREENCOLOUR "Client connected!\n" RESETCOLOUR);
 
         // Assign a name to the client
-        std::string clientName = "Client" + std::to_string(clientCount + 1);
+        std::string clientName = std::to_string(clientCount + 1);
 
         // Add the client socket to the list
         EnterCriticalSection(&cs);
