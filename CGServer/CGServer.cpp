@@ -13,11 +13,13 @@
 #include <chrono>                   // For timestamps
 #include<winsock2.h>                // For UDP / TCP
 #include <Ws2tcpip.h>               // For UDP / TCP
+using namespace std;
 
 #pragma comment(lib,"ws2_32.lib")   //Winsock Library
 
-#define PORT 33333	//The port on which to listen for incoming data
-//#define PORT 8844	//The port on which to listen for incoming data
+#define PORT 33333	//The port on which to listen for incoming data 
+
+//#define PORT 8844	// Use when local server
 
 #define MAX_CLIENTS 12
 SOCKET clientSockets[MAX_CLIENTS]; // Array to hold client sockets
@@ -36,7 +38,7 @@ CRITICAL_SECTION cs; // Critical section for thread safety
 bool SENDJOINTSVIATCP = true;       // Send joints via TCP
 bool RECORDTIMESTAMPS = false;           // logs timestamps to outputFile
 
-const char* pkt = "Message to be sent\n";
+const char* pkt = "\nMessage to be sent";
 sockaddr_in dest;
 
 bool isServerShuttingDown = false;
@@ -59,11 +61,11 @@ DWORD WINAPI ClientHandler(LPVOID lpParam) {
         memset(buffer, 0, BUFFER_SIZE); // Clear the buffer
         int bytesReceived = recv(clientSocket, buffer, BUFFER_SIZE, 0);
         if (bytesReceived == SOCKET_ERROR) {
-            printf(REDCOLOUR "Receive failed or sudden disconnect : %d\n" RESETCOLOUR, WSAGetLastError());
+            printf(REDCOLOUR "\nReceive failed or sudden disconnect : %d" RESETCOLOUR, WSAGetLastError());
             break;
         }
         else if (bytesReceived == 0) {
-            printf(REDCOLOUR "Client disconnected.\n" RESETCOLOUR);
+            printf(REDCOLOUR "\nClient disconnected." RESETCOLOUR);
             break;
         }
 
@@ -73,45 +75,33 @@ DWORD WINAPI ClientHandler(LPVOID lpParam) {
         int packetStringLength = (buffer[3] << 8) | buffer[2];
 
         // Convert buffer to string, ignoring first 5 bytes
-        std::string receivedData(buffer + 4, packetStringLength - 1);
+        string receivedData(buffer + 4, packetStringLength - 1);
+        int newRoomID = (buffer[5] << 8) | buffer[4];
 
         switch (thisevent)
         {
-        case 0:
-            //printf("Received event 0, NewSkeleton\n");
+        case 0:                 // EVENT 0: New Skeleton
+            printf("0,");
             break;
-        case 1:
-            printf("Received event 1, HMDPosition\n");
+        case 1:                 // EVENT 1: HMD Position
+            printf("1,");
             break;
-        case 2:
-            printf("Received event 2, SimpleString\n");
-            printf("Received string from %s: %s\n", clientName.c_str(), receivedData.c_str());
+        case 2:                 // EVENT 2: Simple Debug String
+            printf("\n2,");       
+            printf("%s: %s\n", clientName.c_str(), receivedData.c_str());
             break;
-        case 3:
-            printf("Received event 3, IdentifySelfToServer\n");
-            printf("Received string from %s: %s\n", clientName.c_str(), receivedData.c_str());
+        case 3:                 // EVENT 3: IdentifySelfToServer
+			printf("\n3,IdentifySelfToServer: %s: %s\n", clientName.c_str(), receivedData.c_str()); 
             clientNames[clientSocket] = clientName + clientNames[clientSocket]; // Assign the name to the client
-
-
+            break;
+		case 4:				    // EVENT 4: NewRoom
+            printf("\n4,NewRoom: %s: %d\n", clientName.c_str(), newRoomID);
             break;
         default:
             break;
         }
-        //// Create a new packet to broadcast
-        //std::vector<uint8_t> packetToTransmit;
 
-        //// Copy the good bytes bytes manually using a loop
-        //for (int i = 0; i < packetSendSize; ++i) {
-        //    packetToTransmit.push_back(buffer[i]);
-        //}
-        
-
-        //for (int i = 0; i < bytesReceived; ++i) {
-        //    printf("%02X ", static_cast<unsigned char>(buffer[i]));
-        //}
-        //printf("\n");
-
-        bool SendToSelf = true;
+        bool SendToSelf = false;
 
         // Broadcast message to all clients
         EnterCriticalSection(&cs);
@@ -148,11 +138,11 @@ DWORD WINAPI AcceptConnections(LPVOID lpParam) {
     struct sockaddr_in clientAddr;
     int addrLen = sizeof(clientAddr);
 
-    printf("Start Accepting Connections\n");
+    printf("\nStart Accepting Connections");
 
     while (!isServerShuttingDown) {
 
-        printf("Waiting for client connection...\n");
+        printf("\nWaiting for client connection...");
 
         printf("> ");
         clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &addrLen);
@@ -160,7 +150,7 @@ DWORD WINAPI AcceptConnections(LPVOID lpParam) {
             continue; // Continue accepting other clients
         }
 
-        printf(GREENCOLOUR "Client connected!\n" RESETCOLOUR);
+        printf(GREENCOLOUR "\nClient connected!" RESETCOLOUR);
 
         // Assign a name to the client
         std::string clientName = std::to_string(clientCount + 1);
@@ -172,7 +162,7 @@ DWORD WINAPI AcceptConnections(LPVOID lpParam) {
             clientNames[clientSocket] = clientName; // Assign the name to the client
         }
         else {
-            printf(REDCOLOUR "Max clients reached. Connection refused.\n" RESETCOLOUR);
+            printf(REDCOLOUR "\nMax clients reached. Connection refused." RESETCOLOUR);
             closesocket(clientSocket); // Reject connection
         }
         LeaveCriticalSection(&cs);
@@ -180,7 +170,7 @@ DWORD WINAPI AcceptConnections(LPVOID lpParam) {
         // Create a thread to handle the client
         HANDLE threadHandle = CreateThread(NULL, 0, ClientHandler, (LPVOID)clientSocket, 0, NULL);
         if (threadHandle == NULL) {
-            fprintf(stderr, "Failed to create thread: %d\n", GetLastError());
+            fprintf(stderr, "\nFailed to create thread: %d", GetLastError());
             closesocket(clientSocket); // Close the socket if thread creation failed
         }
         else {
@@ -207,7 +197,7 @@ int main()
 {
     SOCKET socketToTransmit = NULL;
 
-    printf(GREENCOLOUR "Start Thread \n" RESETCOLOUR);
+    printf(GREENCOLOUR "\nStart Thread" RESETCOLOUR);
 
     if (SENDJOINTSVIATCP) {
         WSADATA wsaData;
@@ -216,7 +206,7 @@ int main()
 
         // Initialize Winsock
         if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-            fprintf(stderr, "WSAStartup failed: %d\n", WSAGetLastError());
+            fprintf(stderr, "\nWSAStartup failed: %d", WSAGetLastError());
             return 1;
         }
 
@@ -226,7 +216,7 @@ int main()
         // Create a socket
         serverSocket = socket(AF_INET, SOCK_STREAM, 0);
         if (serverSocket == INVALID_SOCKET) {
-            fprintf(stderr, "Socket creation failed: %d\n", WSAGetLastError());
+            fprintf(stderr, "\nSocket creation failed: %d", WSAGetLastError());
             WSACleanup();
             return 1;
         }
@@ -238,7 +228,7 @@ int main()
 
         // Bind the socket
         if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
-            fprintf(stderr, "Bind failed: %d\n", WSAGetLastError());
+            fprintf(stderr, "\nBind failed: %d", WSAGetLastError());
             closesocket(serverSocket);
             WSACleanup();
             return 1;
@@ -246,18 +236,18 @@ int main()
 
         // Start listening for incoming connections
         if (listen(serverSocket, SOMAXCONN) == SOCKET_ERROR) {
-            fprintf(stderr, "Listen failed: %d\n", WSAGetLastError());
+            fprintf(stderr, "\nListen failed: %d", WSAGetLastError());
             closesocket(serverSocket);
             WSACleanup();
             return 1;
         }
 
-        printf("Server is listening on port %d...\n", PORT);
+        printf("\nServer is listening on port %d...", PORT);
 
         // Create a thread to accept incoming connections
         HANDLE acceptThread = CreateThread(NULL, 0, AcceptConnections, (LPVOID)serverSocket, 0, NULL);
         if (acceptThread == NULL) {
-            fprintf(stderr, "Failed to create accept thread: %d\n", GetLastError());
+            fprintf(stderr, "\nFailed to create accept thread: %d", GetLastError());
             DeleteCriticalSection(&cs);
             closesocket(serverSocket);
             WSACleanup();
@@ -269,7 +259,7 @@ int main()
 
     // Infinite loop to keep the program running until "quit" is entered
     while (1) {
-        printf("> ");
+        printf("\n> ");
         scanf_s("%99s", input); // Read input, limiting to 99 characters to prevent overflow    
         if (strcmp(input, "quit") == 0) {
             break;
@@ -280,7 +270,7 @@ int main()
         // Close sockets and clean up
         isServerShuttingDown = true;
 
-        printf("Exiting the program.\n");
+        printf("\nExiting the program.");
         //DisconnectAllClients();
 
         //DeleteCriticalSection(&cs);
