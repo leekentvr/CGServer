@@ -11,8 +11,12 @@
 #include <string.h>                 // For string handling
 #include <fstream>                  // For file operations
 #include <chrono>                   // For timestamps
-#include<winsock2.h>                // For UDP / TCP
+#include <winsock2.h>                // For UDP / TCP
 #include <Ws2tcpip.h>               // For UDP / TCP
+#include <mutex>
+#include <condition_variable>
+#include <queue> 
+
 using namespace std;
 
 #pragma comment(lib,"ws2_32.lib")   //Winsock Library
@@ -44,58 +48,78 @@ sockaddr_in dest;
 bool isServerShuttingDown = false;
 
 SOCKET serverSocket, clientSocket;
-#define BUFFER_SIZE 1024 //Max length of buffer
+//#define BUFFER_SIZE 1024 //Max length of buffer
+#define BUFFER_SIZE 2048 //Max length of buffer
+
 std::map<SOCKET, std::string> clientNames; // Map of client names
 
-// Function to handle communication with the client
-DWORD WINAPI ClientHandler(LPVOID lpParam) {
+std::queue<std::pair<SOCKET, std::vector<char>>> packetQueue; // Ensure this line ends with a semicolon
+std::mutex queueMutex;
+std::condition_variable queueCondition;
 
-    SOCKET clientSocket = (SOCKET)lpParam;
 
-    // To assign client name
-    std::string clientName = clientNames[clientSocket];
+void EnqueuePacket(SOCKET clientSocket, const char* buffer, int length) {
+    std::lock_guard<std::mutex> lock(queueMutex);
+    packetQueue.push({ clientSocket, std::vector<char>(buffer, buffer + length) });
+	//printf("\nEnqueued %d bytes", length);
+    queueCondition.notify_one();
+}
 
-    char buffer[BUFFER_SIZE];
+std::pair<SOCKET, std::vector<char>> DequeuePacket() {
+    std::unique_lock<std::mutex> lock(queueMutex);
+    queueCondition.wait(lock, [] { return !packetQueue.empty(); });
+    auto packet = packetQueue.front();
+    packetQueue.pop();
+	//printf("\nDequeued %d bytes", packet.second.size());
+    return packet;
+}
 
+DWORD WINAPI PacketProcessor(LPVOID lpParam) {
+    printf(GREENCOLOUR "\nPacket Processor Thread Started" RESETCOLOUR);
     while (!isServerShuttingDown) {
-        memset(buffer, 0, BUFFER_SIZE); // Clear the buffer
-        int bytesReceived = recv(clientSocket, buffer, BUFFER_SIZE, 0);
-        if (bytesReceived == SOCKET_ERROR) {
-            printf(REDCOLOUR "\nReceive failed or sudden disconnect : %d" RESETCOLOUR, WSAGetLastError());
-            break;
-        }
-        else if (bytesReceived == 0) {
-            printf(REDCOLOUR "\nClient disconnected." RESETCOLOUR);
-            break;
-        }
+        auto packet = DequeuePacket();
+        SOCKET clientSocket = packet.first;
+        std::vector<char> buffer = packet.second;
+        int bytesReceived = buffer.size();
 
-        //// What is the recieved event
+        // What is the received event
         int thisevent = (buffer[1] << 8) | buffer[0];
         // What is the total packet size
         int packetStringLength = (buffer[3] << 8) | buffer[2];
 
+
+        // Validate packetStringLength
+        if (packetStringLength <= 0 || packetStringLength - 1 > BUFFER_SIZE - 4) {
+            printf(REDCOLOUR "skip %d" RESETCOLOUR, thisevent);
+            continue;
+        }
+
+        // To assign client name
+        std::string clientName = clientNames[clientSocket];
+
+        //printf("%s", buffer.data());
         // Convert buffer to string, ignoring first 5 bytes
-        string receivedData(buffer + 4, packetStringLength - 1);
+        std::string receivedData(buffer.data() + 4, packetStringLength - 1);
+
         int newRoomID = (buffer[5] << 8) | buffer[4];
 
-        switch (thisevent)
-        {
-        case 0:                 // EVENT 0: New Skeleton
-            printf("0,");
+        switch (thisevent) {
+        case 0: // EVENT 0: New Skeleton. Send to all HMDs
+            printf("0");
             break;
-        case 1:                 // EVENT 1: HMD Position
-            printf("1,");
+        case 1: // EVENT 1: HMD Position goes to everyone
+            printf("1");
             break;
-        case 2:                 // EVENT 2: Simple Debug String
-            printf("\n2,");       
+        case 2: // EVENT 2: Simple Debug String, goes to everyone
+            printf("\n2");
             printf("%s: %s\n", clientName.c_str(), receivedData.c_str());
             break;
-        case 3:                 // EVENT 3: IdentifySelfToServer
-			printf("\n3,IdentifySelfToServer: %s: %s\n", clientName.c_str(), receivedData.c_str()); 
+        case 3: // EVENT 3: IdentifySelfToServer
             clientNames[clientSocket] = clientName + clientNames[clientSocket]; // Assign the name to the client
+            printf("\n3,IdentifySelfToServer: %s: %s.\n", clientNames[clientSocket].c_str(), receivedData.c_str());
             break;
-		case 4:				    // EVENT 4: NewRoom
-            printf("\n4,NewRoom: %s: %d\n", clientName.c_str(), newRoomID);
+        case 4: // EVENT 4: NewRoom
+            printf("\n4,NewRoom: %s: %d.\n", clientName.c_str(), newRoomID);
             break;
         default:
             break;
@@ -106,30 +130,63 @@ DWORD WINAPI ClientHandler(LPVOID lpParam) {
         // Broadcast message to all clients
         EnterCriticalSection(&cs);
         for (int i = 0; i < clientCount; i++) {
-            if (clientSockets[i] != clientSocket or SendToSelf == true) { // Don't send back to the sender
-                //send(clientSockets[i], buffer, bytesReceived, 0);
-                //printf("Sending to client %s\n", clientNames[clientSockets[i]].c_str());
-                send(clientSockets[i], reinterpret_cast<const char*>(buffer), bytesReceived, 0);
+            if (clientSockets[i] != clientSocket || SendToSelf == true) { // Don't send back to the sender
+                // If the client is not an Areamanager (or is a HMDevent which goes to all AM) then send it
+                if (clientNames[clientSocket].find("AreaManager") == std::string::npos || thisevent == 1) {
+                    send(clientSockets[i], buffer.data(), bytesReceived, 0);
+                }
+				else {
+					printf("\nSkipping %s", clientNames[clientSocket].c_str());
+				}
             }
         }
         LeaveCriticalSection(&cs);
     }
 
-    // Remove the client socket from the list and close it
+    printf(REDCOLOUR "\nProcessing thread stopped, this should not happen" RESETCOLOUR);
+    return 0;
+}
+
+DWORD WINAPI ClientHandler(LPVOID lpParam) {
+    SOCKET clientSocket = (SOCKET)lpParam;
+    std::string clientName = clientNames[clientSocket];
+    char buffer[BUFFER_SIZE];
+
+    while (!isServerShuttingDown) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytesReceived = recv(clientSocket, buffer, BUFFER_SIZE, 0);
+        if (bytesReceived == SOCKET_ERROR) {
+            printf(REDCOLOUR "\nReceive failed or sudden disconnect : %d" RESETCOLOUR, WSAGetLastError());
+            break;
+        }
+        else if (bytesReceived == 0) {
+            printf(REDCOLOUR "\nClient disconnected." RESETCOLOUR);
+            break;
+        }
+        else if (bytesReceived > BUFFER_SIZE) {
+            printf(REDCOLOUR "\nPacket size exceeds buffer limit." RESETCOLOUR);
+            continue;
+        }
+        else {
+            //printf("\nReceived %d bytes", bytesReceived);
+            EnqueuePacket(clientSocket, buffer, bytesReceived);
+        }
+    }
+
     EnterCriticalSection(&cs);
     for (int i = 0; i < clientCount; i++) {
         if (clientSockets[i] == clientSocket) {
-            clientSockets[i] = clientSockets[--clientCount]; // Replace with last client
+            clientSockets[i] = clientSockets[--clientCount];
             clientNames.erase(clientSocket);
             break;
         }
     }
-
     LeaveCriticalSection(&cs);
 
     closesocket(clientSocket);
     return 0;
 }
+
 
 // Function to accept incoming connections in a separate thread
 DWORD WINAPI AcceptConnections(LPVOID lpParam) {
@@ -144,7 +201,6 @@ DWORD WINAPI AcceptConnections(LPVOID lpParam) {
 
         printf("\nWaiting for client connection...");
 
-        printf("> ");
         clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &addrLen);
         if (clientSocket == INVALID_SOCKET) {
             continue; // Continue accepting other clients
@@ -197,7 +253,7 @@ int main()
 {
     SOCKET socketToTransmit = NULL;
 
-    printf(GREENCOLOUR "\nStart Thread" RESETCOLOUR);
+    printf(GREENCOLOUR "Start App" RESETCOLOUR);
 
     if (SENDJOINTSVIATCP) {
         WSADATA wsaData;
@@ -253,17 +309,21 @@ int main()
             WSACleanup();
             return 1;
         }
-    }
 
-    char input[100]; // Buffer to store user input
+        // Create a thread to process packets
+        HANDLE packetProcessorThread = CreateThread(NULL, 0, PacketProcessor, NULL, 0, NULL);
+        if (packetProcessorThread == NULL) {
+            fprintf(stderr, "\nFailed to create packet processor thread: %d", GetLastError());
+            DeleteCriticalSection(&cs);
+            closesocket(serverSocket);
+            WSACleanup();
+            return 1;
+        }
+
+    }
 
     // Infinite loop to keep the program running until "quit" is entered
     while (1) {
-        printf("\n> ");
-        scanf_s("%99s", input); // Read input, limiting to 99 characters to prevent overflow    
-        if (strcmp(input, "quit") == 0) {
-            break;
-        }
     }
 
     if (SENDJOINTSVIATCP) {
@@ -271,7 +331,7 @@ int main()
         isServerShuttingDown = true;
 
         printf("\nExiting the program.");
-        //DisconnectAllClients();
+        DisconnectAllClients();
 
         //DeleteCriticalSection(&cs);
         closesocket(serverSocket);
