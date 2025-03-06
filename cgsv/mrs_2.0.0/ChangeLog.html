@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>ChangeLog</title>
+  <meta name="author" content="MONOBIT ENGINE Inc." />
+  <link rel="stylesheet" href="github.css" type="text/css" />
+  <link rel="icon" href="favicon.ico" />
+</head>
+<body>
+<h2>変更履歴</h2>
+
+<h3>MRS 2.0.0</h3>
+
+<h4>機能追加</h4>
+
+<ul>
+<li>MRU（弊社独自開発によるRUDP機能）を実装しました.</li>
+<li>UDP プロトコルのMTUの設定および設定値の取得ができるようにしました.</li>
+<li>MRS_MONITOR（Mackerel対応版の MRS 各種プロセス、モニタリング機能をサポート）を実装しました.</li>
+<li>新たに .NET Core 2.1 に対応しました.</li>
+<li>新たに Go言語で作成したecho_serverサンプルを追加しました.</li>
+<li>Linuxプラットフォームに関し、新たに Ubuntu と Amazon Linux 2のプラットフォームに対応しました.</li>
+<li>Windows ビルドにおいて、VisualStudio 2017に対応しました.</li>
+<li>MRS ROOM SERVER側の動作において、ルームが削除されたことを検知できるようにしました.</li>
+<li>以下のコールバックに対し、通知の際のエラーメッセージ(err_msg)を設定しました.
+
+<ul>
+<li>MrsRoomServerEventCallback</li>
+<li>MrsRoomClientEventCallback</li>
+</ul></li>
+<li>Windows ビルドにおいて、MD（マルチスレッドデバッグ）とMT（マルチスレッド）の双方でビルド可能にしました.</li>
+<li>Android ビルドにおいて、64bit（ARM64）に対応しました.</li>
+<li>MRSレコードを使わず、生データをそのまま送受信するためのAPIとTCP_SSLを追加しました.
+
+<ul>
+<li>mrs_set_read_callback()</li>
+<li>mrs_write()</li>
+</ul></li>
+</ul>
+
+<h4>機能変更</h4>
+
+<ul>
+<li>オプション設定(options)をMRS ROOM API単位で指定できるように変更しました.</li>
+<li>RoomBufferクラスのWrite()系メソッドの戻り値をboolに変更しました.</li>
+<li>FileクラスにRotate()メソッドを追加しました.</li>
+<li>Buffer クラスで float / double の読み書きができるようにしました.</li>
+<li>C#(.NET）のビルドについて<code>dotnet build</code>から<code>dotnet publish</code>に変更しました.</li>
+<li>mrs_room_client_get_safety_unix_time()の戻り値をdoubleに変更しました.</li>
+</ul>
+
+<h4>不具合修正</h4>
+
+<ul>
+<li>一部動作についてセグメンテーション違反が発生するケースがあり、これを修正しました.</li>
+</ul>
+
+<h4>その他</h4>
+
+<ul>
+<li>一部において英語リファレンスを追加しました.</li>
+</ul>
+
+<hr />
+<address>Copyright &#169; 2019 MONOBIT ENGINE Inc.</address>
+</body>
+</html>

@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>MRS_API_Setup</title>
+  <meta name="author" content="MONOBIT ENGINE Inc." />
+  <link rel="stylesheet" href="github.css" type="text/css" />
+  <link rel="icon" href="favicon.ico" />
+</head>
+<body>
+<h1>MRS APIのセットアップと動作確認</h1>
+
+<p>本文書はMRSの開発環境を構築し、動作確認をする方法を説明します。</p>
+
+<h2>Cocos2d-xプロジェクトへの組み込み</h2>
+
+<p>アーカイブ容量がかなり大きいため、<br><br>
+必要に応じて、<br><br>
+<a href="http://www.monobitengine.com/echo_sample_for_cocos2dx_ver.2.0.0.zip"><strong>こちら</strong></a>よりダウンロードをお願いいたします。<br><br>
+Cocos2d-x版のドキュメントはアーカイブに同梱しております。</p>
+
+<h2>C++プロジェクトへの組み込み</h2>
+
+<p>C++プロジェクトでMRSを使うには、ヘッダファイルをインクルードし、ライブラリファイルをリンクします。</p>
+
+<p>組み込みに必要なファイルは以下の位置にあります。</p>
+
+<table><thead>
+<tr>
+<th align="left">パス</th>
+<th align="left">概要</th>
+</tr>
+</thead><tbody>
+<tr>
+<td align="left">mrs/include</td>
+<td align="left">C++用のmrsライブラリのヘッダファイルが格納されています</td>
+</tr>
+<tr>
+<td align="left">mrs/library/mrs</td>
+<td align="left">C++用のライブラリファイルがプラットフォームごとに分けて格納されています</td>
+</tr>
+</tbody></table>
+
+<h3>ヘッダファイルパスの設定</h3>
+
+<p>OSの種類によりません。 <code>mrs/include</code> ディレクトリの位置をコンパイラに設定してください。<br>
+以下のコードがコンパイルできたら問題ありません。</p>
+
+<pre><code>#include &lt;mrs.hpp&gt;
+</code></pre>
+
+<h3>Windowsでのリンク(サーバー／クライアント共通)</h3>
+
+<p>MRSが提供するライブラリと、それらが依存しているWindowsのライブラリの両方を設定する必要があります。</p>
+
+<p>MRSが提供するライブラリは以下のものがあります。<br>
+リンカの入力ファイルに設定してください。</p>
+
+<pre><code>mrs/library/mrs/windows/enet_uv_openssl_1.1.1/{MSVSバージョン}/{MSVSランタイム}/$(Platform)/$(Configuration)/
+  mrs.lib
+  uv.lib
+  enet.lib
+  crypto.lib
+  ssl.lib
+</code></pre>
+
+<p>MRSが依存しているライブラリは以下のものがあります。<br>
+リンカの入力に設定してください。</p>
+
+<pre><code>Ws2_32.lib
+psapi.lib
+Iphlpapi.lib
+Userenv.lib
+winmm.lib
+Advapi32.lib
+Gdi32.lib
+Crypt32.lib
+</code></pre>
+
+<p>また、コンパイル時に以下のオプションを定義してください。</p>
+
+<pre><code>/EHsc
+</code></pre>
+
+<h3>MacOS Xでのリンク(サーバー／クライアント共通)</h3>
+
+<p>以下の位置にあるライブラリファイルをリンク時に指定してください。</p>
+
+<pre><code>mrs/library/mrs/mac/{Macバージョン}/enet_uv_openssl_1.1.1/
+  libmrs.a
+  libuv.a
+  libenet.a
+  libcrypto.a
+  libssl.a
+</code></pre>
+
+<p>また、コンパイル時に以下のマクロを定義してください。</p>
+
+<pre><code>-DMRS_MAC
+</code></pre>
+
+<h3>Linuxでのリンク(サーバー／クライアント共通)</h3>
+
+<p>以下のライブラリファイルをリンク時に指定してください。</p>
+
+<pre><code>mrs/library/mrs/linux/{OS_GCCバージョン}/enet_uv_openssl_1.1.1/
+  libmrs.a
+  libuv.a
+  libenet.a
+  libcrypto.a
+  libssl.a
+</code></pre>
+
+<p>MRSが依存しているライブラリは以下のものがあります。<br>
+リンカの入力に設定してください。</p>
+
+<pre><code>pthread
+rt
+dl
+</code></pre>
+
+<p>また、以下のマクロをコンパイル時に定義してください。</p>
+
+<pre><code>-DMRS_LINUX
+</code></pre>
+
+<h2>サンプルコードの動作確認</h2>
+
+<p>MRSの配布パッケージには、基本的な動作を確認できるソースが含まれています。<br>
+ソースはコンパイルすることもできるので、サンプルコードをコピーして開発を始めることも可能です。</p>
+
+<p>サンプルコードは以下の位置にあります。</p>
+
+<table><thead>
+<tr>
+<th align="left">ソースコードのパス</th>
+<th align="left">実行ファイル名</th>
+<th align="left">概要</th>
+</tr>
+</thead><tbody>
+<tr>
+<td align="left">mrs/sample/cpp/source/base_loop.cpp</td>
+<td align="left">base_loop</td>
+<td align="left">C++用のmrsライブラリの基本のサンプル</td>
+</tr>
+<tr>
+<td align="left">mrs/sample/cpp/source/log.cpp</td>
+<td align="left">log</td>
+<td align="left">C++用のmrsライブラリのログ出力のサンプル</td>
+</tr>
+<tr>
+<td align="left">mrs/sample/cpp/source/echo_server.cpp</td>
+<td align="left">echo_server</td>
+<td align="left">C++用のmrsライブラリのエコーサーバーのサンプル</td>
+</tr>
+<tr>
+<td align="left">mrs/sample/cpp/source/echo_client.cpp</td>
+<td align="left">echo_client</td>
+<td align="left">C++用のmrsライブラリのエコークライアントのサンプル</td>
+</tr>
+</tbody></table>
+
+<h3>サンプルコードの使い方</h3>
+
+<p>それぞれのサンプルコードの使い方は、以下の通りです。</p>
+
+<ul>
+<li>log : MRSのログ出力APIのサンプルです。　ログの出力レベルを変更して、ログ出力を切り替えています。</li>
+<li>base_loop : MRSの初期化とメインループの実装サンプルです。起動後3秒間ログを出力し終了します。</li>
+<li>echo_server : MRSのレコードをエコー(おうむがえし)する、バイナリデータ通信のサーバーサンプルです。</li>
+<li>echo_client : echo_serverと対で使う、バイナリデータ通信のクライアントサンプルです。 echo_serverを起動した後に起動してください。</li>
+</ul>
+
+<p>ビルド済みの実行ファイルの位置は、OSごとに以下の位置に分けて配置されています。</p>
+
+<pre><code>mrs/sample/cpp/build/
+mrs/sample/cpp/build/windows/
+</code></pre>
+
+<h3>MacOS X | Linux | Windowsでサンプルコードをビルドする</h3>
+
+<h4>セットアップスクリプト(MacOS X | Linux)</h4>
+
+<table><thead>
+<tr>
+<th align="left">スクリプト名</th>
+<th align="left">概要</th>
+</tr>
+</thead><tbody>
+<tr>
+<td align="left">setup_dev.sh</td>
+<td align="left">開発環境に必要なパッケージをインストール</td>
+</tr>
+<tr>
+<td align="left">setup_ops.sh</td>
+<td align="left">運用環境に必要なパッケージをインストール</td>
+</tr>
+<tr>
+<td align="left">setup_timezone.sh</td>
+<td align="left">指定されたタイムゾーンを設定</td>
+</tr>
+</tbody></table>
+
+<p>上記スクリプトを必要に応じて実行することで、MRSに必要な環境構築を行います。</p>
+
+<pre><code>./setup_dev.sh
+./setup_ops.sh
+./setup_timezone.sh Asia/Tokyo
+</code></pre>
+
+<h4>MacOS Xでのビルド</h4>
+
+<pre><code>cd mrs/sample/cpp/build
+MRS_PLATFORM_TYPE=mac MRS_PLATFORM_VERSION=10.12 ./cmake.sh
+make clean all
+</code></pre>
+
+<p>上記を実行すると、mrs/sample/cpp/build以下に、base_loopなど実行ファイルが生成されます。</p>
+
+<h4>Linuxでのビルド</h4>
+
+<pre><code>cd mrs/sample/cpp/build
+MRS_PLATFORM_TYPE=linux MRS_PLATFORM_VERSION=centos7_4.8.5 ./cmake.sh
+make clean all
+</code></pre>
+
+<p>上記を実行すると、mrs/sample/cpp/build以下に、base_loopなど実行ファイルが生成されます。</p>
+
+<h4>Windowsでのビルド</h4>
+
+<pre><code>cd mrs/sample/cpp/build
+MRS_PLATFORM_TYPE=windows MRS_PLATFORM_VERSION=2017 ./cmake.sh
+</code></pre>
+
+<p>上記を実行すると、mrs/sample/cpp/build/windows以下に、2017_MT_x64_Release/mrs_sample.slnなどのファイルが生成されます。</p>
+
+<h2>エコーサンプルの詳細</h2>
+
+<p>echo_serverと echo_clientは、ゲームサーバー開発の起点となるプログラムです。<br>
+ここでは動作確認の方法を詳しく説明します。</p>
+
+<h2>echo_server</h2>
+
+<p>コマンドライン引数の意味は次の通りです。</p>
+
+<pre><code>./echo_server &lt;スリープ時間(ミリ秒)&gt; &lt;サーバーのアドレス&gt; &lt;サーバーのポート番号&gt; &lt;バックログ数&gt; &lt;レコードによる送受信を行うかどうか&gt;
+</code></pre>
+
+<p>標準出力の例</p>
+
+<pre><code>$ ./echo_server 
+arg 01: sleep_msec [1]
+arg 02: server_addr [0.0.0.0]
+arg 03: server_port [22222]
+arg 04: backlog [10]
+arg 05: is_valid_record(OFF:0 ON:1) [1]
+sleep_msec=1 server_addr=0.0.0.0 server_port=22222 backlog=10 arg_is_valid_record=1
+TCP listening on 0.0.0.0 22222
+UDP waiting on 0.0.0.0 22222
+WS listening on 0.0.0.0 22223
+WSS listening on 0.0.0.0 22224
+TCP_SSL listening on 0.0.0.0 22225
+MRU waiting on 0.0.0.0 22226
+</code></pre>
+
+<h2>echo_client</h2>
+
+<p>コマンドライン引数の意味は次の通りです。</p>
+
+<pre><code>./echo_client &lt;コネクションタイプ&gt; &lt;鍵交換フラグ&gt; &lt;レコード暗号フラグ&gt; &lt;送信データ長&gt; &lt;送信レコード数&gt; &lt;送信コネクション数&gt; &lt;スリープ時間(ミリ秒)&gt; &lt;サーバーのアドレス&gt; &lt;サーバーのポート番号&gt; &lt;タイムアウト時間(ミリ秒)&gt; &lt;レコードによる送受信を行うかどうか&gt; &lt;WS|WSS接続時に指定するパス&gt;
+</code></pre>
+
+<p>echo_clientは、echo_serverを起動した後に起動してください。</p>
+
+<h2>echo_clientによる通信遅延時間の計測</h2>
+
+<h3>1. TCP + 暗号化無レコードの送信</h3>
+
+<p>通信を始めると、以下のフォーマットでログが出力されます。</p>
+
+<pre><code>read_echo data=TCP NOCRYPT &lt;コネクション番号&gt;: &lt;レコード番号&gt; data_len=1024 diff_time=&lt;遅延時間(秒.マイクロ秒)&gt;(&lt;受信時間&gt; - &lt;送信時間&gt;)
+</code></pre>
+
+<p>標準出力の例</p>
+
+<pre><code>$ ./echo_client 1 1 0
+arg 01: connection_type(TCP:1 UDP:2 WS:3 WSS:4 TCP_SSL:5 MRU:6 TCP -&gt; WSS -&gt; WS:*) [1]
+arg 02: is_key_exchange(OFF:0 ON:1) [1]
+arg 03: is_encrypt_records(OFF:0 ON:1) [1]
+arg 04: write_data_len [1024]
+arg 05: write_count [10]
+arg 06: connections [1]
+arg 07: sleep_msec [1]
+arg 08: server_addr [127.0.0.1]
+arg 09: server_port [22222]
+arg 10: timeout_msec [5000]
+arg 11: is_valid_record(OFF:0 ON:1) [1]
+arg 12: connection_path [/]
+connection_type=1 is_key_exchange=1 is_encrypt_records=0 write_data_len=1024 write_count=10 connections=1 sleep_msec=1 server_addr=127.0.0.1 server_port=22222 timeout_msec=5000 is_valid_record=1 connection_path=/
+on_fallback_connect connection_type=1 addr=127.0.0.1 port=22222 timeout_msec=5000
+on_connect local_mrs_version=0x2000000 remote_mrs_version=0x2000000
+on_key_exchange
+parse_record seqnum=3 options=0x00 payload=0x01/1036
+read_echo data=TCP NOCRYPT 1: 1 data_len=1024 diff_time=0.000122(1567480792.207487 - 1567480792.207365)
+parse_record seqnum=4 options=0x00 payload=0x01/1036
+read_echo data=TCP NOCRYPT 1: 2 data_len=1024 diff_time=0.001563(1567480792.208944 - 1567480792.207381)
+parse_record seqnum=5 options=0x00 payload=0x01/1036
+read_echo data=TCP NOCRYPT 1: 3 data_len=1024 diff_time=0.001571(1567480792.208959 - 1567480792.207388)
+parse_record seqnum=6 options=0x00 payload=0x01/1036
+read_echo data=TCP NOCRYPT 1: 4 data_len=1024 diff_time=0.001575(1567480792.208969 - 1567480792.207394)
+parse_record seqnum=7 options=0x00 payload=0x01/1036
+read_echo data=TCP NOCRYPT 1: 5 data_len=1024 diff_time=0.001578(1567480792.208978 - 1567480792.207400)
+parse_record seqnum=8 options=0x00 payload=0x01/1036
+read_echo data=TCP NOCRYPT 1: 6 data_len=1024 diff_time=0.001573(1567480792.208984 - 1567480792.207411)
+parse_record seqnum=9 options=0x00 payload=0x01/1036
+read_echo data=TCP NOCRYPT 1: 7 data_len=1024 diff_time=0.001569(1567480792.208990 - 1567480792.207421)
+parse_record seqnum=10 options=0x00 payload=0x01/1036
+read_echo data=TCP NOCRYPT 1: 8 data_len=1024 diff_time=0.001569(1567480792.208996 - 1567480792.207427)
+parse_record seqnum=11 options=0x00 payload=0x01/1036
+read_echo data=TCP NOCRYPT 1: 9 data_len=1024 diff_time=0.001570(1567480792.209002 - 1567480792.207432)
+parse_record seqnum=12 options=0x00 payload=0x01/1036
+read_echo data=TCP NOCRYPT 1: 10 data_len=1024 diff_time=0.001569(1567480792.209009 - 1567480792.207440)
+Since all records have been received, it is finished.
+on_disconnect local_mrs_version=0x2000000 remote_mrs_version=0x2000000
+</code></pre>
+
+<h3>2. TCP + 暗号化有レコードの送信</h3>
+
+<p>通信が始まると、以下のフォーマットでログが出力されます。</p>
+
+<pre><code>read_echo data=TCP   CRYPT &lt;コネクション番号&gt;: &lt;レコード番号&gt; data_len=1024 diff_time=&lt;遅延時間(秒.マイクロ秒)&gt;(&lt;受信時間&gt; - &lt;送信時間&gt;)
+</code></pre>
+
+<p>標準出力の例</p>
+
+<pre><code>$ ./echo_client 1 1 1
+arg 01: connection_type(TCP:1 UDP:2 WS:3 WSS:4 TCP_SSL:5 MRU:6 TCP -&gt; WSS -&gt; WS:*) [1]
+arg 02: is_key_exchange(OFF:0 ON:1) [1]
+arg 03: is_encrypt_records(OFF:0 ON:1) [1]
+arg 04: write_data_len [1024]
+arg 05: write_count [10]
+arg 06: connections [1]
+arg 07: sleep_msec [1]
+arg 08: server_addr [127.0.0.1]
+arg 09: server_port [22222]
+arg 10: timeout_msec [5000]
+arg 11: is_valid_record(OFF:0 ON:1) [1]
+arg 12: connection_path [/]
+connection_type=1 is_key_exchange=1 is_encrypt_records=1 write_data_len=1024 write_count=10 connections=1 sleep_msec=1 server_addr=127.0.0.1 server_port=22222 timeout_msec=5000 is_valid_record=1 connection_path=/
+on_fallback_connect connection_type=1 addr=127.0.0.1 port=22222 timeout_msec=5000
+on_connect local_mrs_version=0x2000000 remote_mrs_version=0x2000000
+on_key_exchange
+parse_record seqnum=3 options=0x01 payload=0x01/1036
+read_echo data=TCP   CRYPT 1: 1 data_len=1024 diff_time=0.000461(1567480796.171236 - 1567480796.170775)
+parse_record seqnum=4 options=0x01 payload=0x01/1036
+read_echo data=TCP   CRYPT 1: 2 data_len=1024 diff_time=0.000449(1567480796.171266 - 1567480796.170817)
+parse_record seqnum=5 options=0x01 payload=0x01/1036
+read_echo data=TCP   CRYPT 1: 3 data_len=1024 diff_time=0.000461(1567480796.171309 - 1567480796.170848)
+parse_record seqnum=6 options=0x01 payload=0x01/1036
+read_echo data=TCP   CRYPT 1: 4 data_len=1024 diff_time=0.000433(1567480796.171329 - 1567480796.170896)
+parse_record seqnum=7 options=0x01 payload=0x01/1036
+read_echo data=TCP   CRYPT 1: 5 data_len=1024 diff_time=0.000383(1567480796.171345 - 1567480796.170962)
+parse_record seqnum=8 options=0x01 payload=0x01/1036
+read_echo data=TCP   CRYPT 1: 6 data_len=1024 diff_time=0.003025(1567480796.174018 - 1567480796.170993)
+parse_record seqnum=9 options=0x01 payload=0x01/1036
+read_echo data=TCP   CRYPT 1: 7 data_len=1024 diff_time=0.002997(1567480796.174040 - 1567480796.171043)
+parse_record seqnum=10 options=0x01 payload=0x01/1036
+read_echo data=TCP   CRYPT 1: 8 data_len=1024 diff_time=0.002986(1567480796.174058 - 1567480796.171072)
+parse_record seqnum=11 options=0x01 payload=0x01/1036
+read_echo data=TCP   CRYPT 1: 9 data_len=1024 diff_time=0.002949(1567480796.174075 - 1567480796.171126)
+parse_record seqnum=12 options=0x01 payload=0x01/1036
+read_echo data=TCP   CRYPT 1: 10 data_len=1024 diff_time=0.002929(1567480796.174092 - 1567480796.171163)
+Since all records have been received, it is finished.
+on_disconnect local_mrs_version=0x2000000 remote_mrs_version=0x2000000
+</code></pre>
+
+<h2>psコマンドによるメモリやCPU使用量の計測</h2>
+
+<p>各サンプルプログラムがどの程度の量のメモリやCPUを使用しているかは、ps コマンドで知ることが可能です。</p>
+
+<p>以下を参考にしてください。</p>
+
+<p><a href="http://qiita.com/white_aspara25/items/cfc835006ae356189df3">http://qiita.com/white_aspara25/items/cfc835006ae356189df3</a></p>
+
+<p>実際の例</p>
+
+<pre><code>$ ps aux | grep echo
+   3017  4.4  0.6  21092  3220 pts/0    S+   21:00   0:01 ./echo_server
+   3019  4.2  0.4  20036  2196 pts/1    S+   21:01   0:01 ./echo_client
+</code></pre>
+
+<h2>C#プロジェクトへの組み込み</h2>
+
+<p>C#プロジェクトにMRSを使うには、まずC#フレームワークを選択します。  </p>
+
+<table><thead>
+<tr>
+<th align="left">フレームワーク</th>
+<th align="left">概要</th>
+</tr>
+</thead><tbody>
+<tr>
+<td align="left">.NET Core 2.0以降</td>
+<td align="left">マルチプラットフォームのC#フレームワーク。推奨フレームワークです。サンプルプログラムではこちらを使用しています。</td>
+</tr>
+<tr>
+<td align="left">.NET Framework</td>
+<td align="left">Windows専用のフレームワークです。Windowsでのみ使用するならこちらを選択します。</td>
+</tr>
+</tbody></table>
+
+<p>ここでは推奨フレームワークである.NET Coreのバージョン2.1系を用いて説明していきます。  </p>
+
+<h3>.NET Coreのインストール</h3>
+
+<p>以下のサイトから各プラットフォームに.NET Core SDKをダウンロードして、インストールしてください。<br><br>
+<a href="https://github.com/dotnet/core/blob/master/release-notes/2.1/2.1.12/2.1.12-download.md">https://github.com/dotnet/core/blob/master/release-notes/2.1/2.1.12/2.1.12-download.md</a>  </p>
+
+<p>CentOS上でのインストール方法については、以下のシェルを実行してください。</p>
+
+<pre><code>mrs\sample\csharp\netcoreapp2.1\script\inst.h
+
+$ sh inst.sh
+</code></pre>
+
+<p>最新版の.NET Coreを使用する場合などは、以下を参考にしてください。</p>
+
+<p>上記のシェル内に記述されている.NET Coreのバージョンを変更すればインストールが可能です。</p>
+
+<p><a href="https://github.com/dotnet/core/blob/master/release-notes/2.2/2.2.6/2.2.6-download.md">https://github.com/dotnet/core/blob/master/release-notes/2.2/2.2.6/2.2.6-download.md</a></p>
+
+<h3>.NET Coreでのプロジェクト作成</h3>
+
+<p>.NET Core 2.0以降においては、VisualStudio 2017以降を使用してプロジェクトを作成します。<br><br>
+「ファイル」→「新規作成」→「プロジェクト」でプロジェクト作成ダイアログを開き、<br><br>
+「Visual C#」→「.NET Core」→「コンソール アプリ(.NET Core)」を選択してプロジェクト作成を作成します。  </p>
+
+<p>空プロジェクトを作成すると、プロジェクトファイル内は以下のような内容で作成されます。</p>
+
+<pre><code>&lt;Project Sdk=&quot;Microsoft.NET.Sdk&quot;&gt;
+
+  &lt;PropertyGroup&gt;
+    &lt;OutputType&gt;Exe&lt;/OutputType&gt;
+    &lt;TargetFramework&gt;netcoreapp2.1&lt;/TargetFramework&gt;
+  &lt;/PropertyGroup&gt;
+
+&lt;/Project&gt;
+</code></pre>
+
+<h4>プロジェクト作成上のワンポイント</h4>
+
+<p>プロジェクトのビルドイベントで、ファイルコピーなどを行う事があります。（mrs.dllなど）<br><br>
+Linux上でシェルを実行した際に、コピーのエラーの元となりますので、LinuxとWindowsではプロジェクトを分けておくと便利です。  </p>
+
+<h3>.NET Coreでのビルド＆実行</h3>
+
+<p>.NET Coreを使用してのビルド＆実行の手順です。<br><br>
+尚コマンドは、Windowsのバッチ処理や、Linux上のシェルからも同じ構文となります。</p>
+
+<p>.NET Coreを使用してのビルドコマンドは以下の通りになります。  </p>
+
+<pre><code>dotnet restore {プロジェクト名}.csproj
+dotnet publish {プロジェクト名}.csproj --configuration {Debug|Release}
+</code></pre>
+
+<p><strong>dotnetコマンドではpublishを指定してビルドしています。これはpublishを指定すると、特定フォルダに実行に必要なファイル一式がコピーされ、ビルド後にフォルダを移動しても実行できるからです。</strong></p>
+
+<p>.NET Coreを使用しての実行コマンドは以下の通りになります。  </p>
+
+<pre><code>出力フォルダがデフォルトでDebugビルドの場合
+dotnet bin/Debug/netcoreapp2.1/publish/{プロジェクト名}.dll
+
+プロジェクトを選択しても実行できます
+dotnet run {プロジェクト名}.csproj --configuration {Debug|Release}
+</code></pre>
+
+<h3>C#用MRSクラスライブラリをプロジェクトに組み込む</h3>
+
+<p>ここまでで.NET Core2.1のプロジェクトを作成しましたので、次はMRSクラスライブラリを組み込んでいきます。</p>
+
+<table><thead>
+<tr>
+<th align="left">パス</th>
+<th align="left">概要</th>
+</tr>
+</thead><tbody>
+<tr>
+<td align="left">mrs\sample\csharp\libmrs\Monobit\mrs</td>
+<td align="left">MRS用のクラスライブラリが入っています。</td>
+</tr>
+<tr>
+<td align="left">mrs\sample\csharp\netcoreapp2.1\2017</td>
+<td align="left">各フォルダにはC#用のサンプルアプリのプロジェクトファイルやビルド＆実行スクリプトが入っています。</td>
+</tr>
+<tr>
+<td align="left">mrs\sample\csharp\source</td>
+<td align="left">C#用のサンプルアプリのソースコードが入っています。</td>
+</tr>
+</tbody></table>
+
+<p>MRSクラスライブラリを参照するために、プロジェクトに参照パスを追加します。<br><br>
+MRSクラスライブラリでは高速化のためにunsafeコードを使っていますので、<br><br>
+PropertyGroupの中でunsafeコードの許可も同時にプロジェクトに追加しておきます。<br><br>
+最後にビルド後のイベントとして、PostBuildEventにてmrs.dllをパッケージよりコピーしてきます。<br><br>
+mrs.dllはVisualStudio 2015でビルドされたもので問題ありません。<br><br>
+但し、このコピーコマンドを入れるとLinux上では当然のようにエラーが表示されます。<br><br>
+そのためPostBuildEventを省いたLinux版のプロジェクトファイルを作っておくと便利です。  </p>
+
+<p>下記の例では、サンプルアプリのフォルダ位置と同列の場所にWindows版のプロジェクトファイルを作成している例となります。  </p>
+
+<pre><code>&lt;Project Sdk=&quot;Microsoft.NET.Sdk&quot;&gt;
+
+  &lt;PropertyGroup&gt;
+    &lt;OutputType&gt;Exe&lt;/OutputType&gt;
+    &lt;TargetFramework&gt;netcoreapp2.1&lt;/TargetFramework&gt;
+  &lt;/PropertyGroup&gt;
+
+  &lt;PropertyGroup Condition=&quot;&#39;$(Configuration)|$(Platform)&#39;==&#39;Debug|AnyCPU&#39;&quot;&gt;
+    &lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;
+  &lt;/PropertyGroup&gt;
+
+  &lt;PropertyGroup Condition=&quot;&#39;$(Configuration)|$(Platform)&#39;==&#39;Release|AnyCPU&#39;&quot;&gt;
+    &lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;
+  &lt;/PropertyGroup&gt;
+
+  &lt;ItemGroup&gt;
+    &lt;Compile Include=&quot;..\..\source\base_loop.cs&quot; /&gt;
+    &lt;Compile Include=&quot;..\..\libmrs\Monobit\mrs\Mrs.cs&quot; /&gt;
+    &lt;Compile Include=&quot;..\..\libmrs\Monobit\mrs\MrsBuffer.cs&quot; /&gt;
+    &lt;Compile Include=&quot;..\..\libmrs\Monobit\mrs\MrsDateTime.cs&quot; /&gt;
+    &lt;Compile Include=&quot;..\..\libmrs\Monobit\mrs\MrsTime.cs&quot; /&gt;
+    &lt;Compile Include=&quot;..\..\libmrs\Monobit\mrs\MrsUtility.cs&quot; /&gt;
+  &lt;/ItemGroup&gt;
+
+  &lt;Target Name=&quot;PostBuild&quot; AfterTargets=&quot;PostBuildEvent&quot;&gt;
+    &lt;Exec Command=&quot;copy $(ProjectDir)..\..\..\..\..\library\mrs\windows\enet_uv_openssl_1.1.1\2017\MT\x64\$(ConfigurationName) $(OutDir)&amp;#xD;&amp;#xA;&quot; /&gt;
+  &lt;/Target&gt;
+
+&lt;/Project&gt;
+</code></pre>
+
+<h2>C#版サンプルコードの動作確認</h2>
+
+<p>C++版同様にサンプルコードをコピーして開発を始めることが可能です。<br><br>
+サンプルコードは以下の位置にあります。</p>
+
+<table><thead>
+<tr>
+<th align="left">パス</th>
+<th align="left">概要</th>
+</tr>
+</thead><tbody>
+<tr>
+<td align="left">mrs\sample\csharp\source\base_loop.cs</td>
+<td align="left">C#用のmrsライブラリの基本のサンプル</td>
+</tr>
+<tr>
+<td align="left">mrs\sample\csharp\source\base_server.cs</td>
+<td align="left">C#用のmrsライブラリ+プラットフォーム共通シグナル基本処理</td>
+</tr>
+<tr>
+<td align="left">mrs\sample\csharp\source\base_server_linux.cs</td>
+<td align="left">C#用のmrsライブラリ+Linux用シグナル基本処理</td>
+</tr>
+<tr>
+<td align="left">mrs\sample\csharp\source\base_server_win.cs</td>
+<td align="left">C#用のmrsライブラリ+Windows用シグナル基本処理</td>
+</tr>
+<tr>
+<td align="left">mrs\sample\csharp\source\echo_client.cs</td>
+<td align="left">C#用のmrsライブラリのエコーサーバーのサンプル</td>
+</tr>
+<tr>
+<td align="left">mrs\sample\csharp\source\echo_server.cs</td>
+<td align="left">C#用のmrsライブラリのエコークライアントのサンプル</td>
+</tr>
+<tr>
+<td align="left">mrs\sample\csharp\source\log.cs</td>
+<td align="left">C#用のmrsライブラリのログ出力のサンプル</td>
+</tr>
+</tbody></table>
+
+<h3>C#版サンプルコードの使い方</h3>
+
+<p>基本的にC++版サンプルコードの使い方に準じます。<br><br>
+但し、実行コマンドが異なるので注意が必要です。<br><br>
+上記に実行コマンドを説明していますので、参照してください。<br><br>
+実行コマンド以外では、引数の指定方法が違います。<br>
+例としてecho_serverの引数の指定方法を説明します。</p>
+
+<pre><code>dotnet bin/Debug/netcoreapp2.1/publish/echo_server.dll --sleep_msec=1 --server_addr=&quot;0.0.0.0&quot; --server_port=22222 --backlog=10
+</code></pre>
+
+<h2>C#版の注意点</h2>
+
+<p>.NET Coreでは、C++と違いOSからのシグナル処理の対応がプラットフォーム間においてまちまちです。<br><br>
+その為、MRSにおいてはプラットフォーム間のシグナル処理を吸収した便利クラスがありますので、<br><br>
+実装のお役に立ててください。</p>
+
+<pre><code>・ExitSignalの使い方
+using()内で使用します。
+以下のようにSetSignal()で設定したハンドラ内でループフラグをOFFにして、
+正常にループを終了させる事ができます。
+
+using System.Threading;
+using MrsLibs.Signal
+
+class Hoge
+{
+    private static volatile bool s_bIsRun = true;
+
+    publib static void Main(string[] args)
+    {
+        using(var sig = new ExitSignal())
+        {
+            sig.SetSignal((obj, e) =&gt; {
+                var ev_arg = e as SignalEventArgs;
+                Console.WriteLine($&quot;Event: {event_args.SignalEnums}&quot;);
+                s_bIsRun = false;
+                Thread.Sleep(10);
+            });
+
+            while(s_bIsRun)
+            {
+                // ループ処理
+                ...
+            }
+        }
+    }
+}
+
+
+ちなみに名前空間のMrsLibsは、
+mrs/sample/csharp/source/base_libs.cs
+に定義されています。
+</code></pre>
+
+<hr />
+<address>Copyright &#169; 2019 MONOBIT ENGINE Inc.</address>
+</body>
+</html>

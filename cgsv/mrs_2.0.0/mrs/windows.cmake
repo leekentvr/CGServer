@@ -1,0 +1,22 @@
+set(__FLAGS__
+    CMAKE_CXX_FLAGS
+    CMAKE_CXX_FLAGS_DEBUG
+    CMAKE_CXX_FLAGS_RELEASE
+    CMAKE_C_FLAGS
+    CMAKE_C_FLAGS_DEBUG
+    CMAKE_C_FLAGS_RELEASE
+)
+foreach(__FLAG__ ${__FLAGS__})
+    string(REPLACE "/MD" "/${MSVS_RUNTIME}" ${__FLAG__} "${${__FLAG__}}")
+    string(REGEX REPLACE "/Z." "" ${__FLAG__} "${${__FLAG__}}")
+    set(${__FLAG__} "${${__FLAG__}} /Z7" )
+endforeach()
+
+message("MSVS_VERSION: ${MSVS_VERSION}")
+message("MSVS_RUNTIME: ${MSVS_RUNTIME}")
+message("CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+message("CMAKE_CXX_FLAGS_DEBUG: ${CMAKE_CXX_FLAGS_DEBUG}")
+message("CMAKE_CXX_FLAGS_RELEASE: ${CMAKE_CXX_FLAGS_RELEASE}")
+message("CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
+message("CMAKE_C_FLAGS_DEBUG: ${CMAKE_C_FLAGS_DEBUG}")
+message("CMAKE_C_FLAGS_RELEASE: ${CMAKE_C_FLAGS_RELEASE}")

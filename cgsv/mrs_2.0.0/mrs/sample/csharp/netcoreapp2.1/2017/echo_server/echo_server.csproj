@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\..\source\echo_server.cs" />
+    <Compile Include="..\..\..\source\base_libs.cs" />
+    <Compile Include="..\..\..\libmrs\Monobit\mrs\Mrs.cs" />
+    <Compile Include="..\..\..\libmrs\Monobit\mrs\MrsBuffer.cs" />
+    <Compile Include="..\..\..\libmrs\Monobit\mrs\MrsDateTime.cs" />
+    <Compile Include="..\..\..\libmrs\Monobit\mrs\MrsTime.cs" />
+    <Compile Include="..\..\..\libmrs\Monobit\mrs\MrsUtility.cs" />
+    <Compile Include="..\..\..\libmrs\Monobit\mrs\MrsConnect.cs" />
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="copy $(ProjectDir)..\..\..\..\..\library\mrs\windows\enet_uv_openssl_1.1.1\2017\MT\x64\$(ConfigurationName)\mrs.dll $(OutDir)&#xD;&#xA;" />
+  </Target>
+
+</Project>

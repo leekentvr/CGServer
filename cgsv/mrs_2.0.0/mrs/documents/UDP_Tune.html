@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>UDP_Tune</title>
+  <meta name="author" content="MONOBIT ENGINE Inc." />
+  <link rel="stylesheet" href="github.css" type="text/css" />
+  <link rel="icon" href="favicon.ico" />
+</head>
+<body>
+<h1>LinuxにおけるUDP性能のチューニング</h1>
+
+<p>UDPのドロップが実際に起きているかどうかはnetstatで確認できる。</p>
+
+<pre>
+netstat -s 
+Udp:
+    6972952 packets received
+    237092 packets to unknown port received.
+    522753 packet receive errors    <- この値が速く増えてるときはUDPパケットがドロップしている。
+    7738080 packets sent
+    RcvbufErrors: 522753
+</pre>
+
+<p>UDPの性能を最大化するために、<br>
+以下の方法でカーネルパラメータを大きくする。</p>
+
+<pre>
+sudo sysctl -w net.core.rmem_max=8388608
+sudo sysctl -w net.core.rmem_default=8388608
+</pre>
+
+<p>大きくするほど取りこぼしが減る。</p>
+
+<hr />
+<address>Copyright &#169; 2019 MONOBIT ENGINE Inc.</address>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>MRS_API_Overview</title>
+  <meta name="author" content="MONOBIT ENGINE Inc." />
+  <link rel="stylesheet" href="github.css" type="text/css" />
+  <link rel="icon" href="favicon.ico" />
+</head>
+<body>
+<h1>MRS API解説</h1>
+
+<p>本文書はMRSライブラリが提供する関数群の概要を説明します。<br>
+<a href="MRS_API_Setup.html">セットアップと動作確認</a>,<br>
+<a href="MRS_API_Reference.html">関数リファレンス</a><br>
+も合わせてご活用ください。</p>
+
+<h2>MRS APIの概要</h2>
+
+<p>MRSは、バイナリデータを「レコード」と呼ぶ単位で送受信するためのC++ライブラリです。<br>
+リアルタイムゲームの実装に適した低遅延・高効率で動作するように設計されています。</p>
+
+<p>利用可能なトランスポート層プロトコルはTCPとUDPで、<br>
+UDPを使う場合には再送機能や順序制御機能のあるモード(RUDP)とそうでない通常のUDPを使うモードを選択できます。</p>
+
+<p>TCPとUDPのどちらでも、AES128を用いた暗号化通信を使うよう設定できます。<br>
+暗号の土台となる秘密鍵の交換には、ECDH(楕円曲線ディフィー・ヘルマン)アルゴリズムを利用します。<br>
+暗号化は送受信するレコードの単位で有効化・無効化を切り替えることができます。</p>
+
+<p>MRSのC++ APIはクライアントとしてもサーバとしても利用でき、<br>
+Linux, MacOS, Windows, iOS, Androidなど各種のプラットフォームで動作します。</p>
+
+<p>多くの言語向けのバインディングを提供するときの複雑なバグやAPIの仕様変更による動作不良を減らすため、外部APIは出来る限りC++の機能を使わず、C言語風の関数として構成されています。<br>
+ただし、内部的にはC++の機能を使っています。</p>
+
+<h2>MRS APIに含まれないもの</h2>
+
+<p>ゲームのデータをルームの参加メンバーで送受信するルームサーバーや、<br>
+チャット、ゲームマッチングなどの上位の機能については、<br>
+MRS APIには含まれません。それぞれ対応するドキュメントを参照してください。</p>
+
+<p>またRPCを実装するためのシリアライズを行うためのスタブソースコードジェネレータは含みません。</p>
+
+<h2>MRS APIにおけるプロセスとスレッド</h2>
+
+<p>(TODO:内容を充実予定)</p>
+
+<p>MRS APIはスレッドセーフではありません。<br>
+シングルスレッドプログラムで最大の効率が達成できるように、<br>
+マルチスレッド動作時の排他制御を実装していません。</p>
+
+<h2>MRS APIの最も小さい使用例</h2>
+
+<p>MRSはフレームワークではなくライブラリなので、<br>
+既存のアプリケーションコードに組み込んで使います。</p>
+
+<p>main関数はアプリケーション側で定義し、<br>
+<code>mrs_initialize()</code>を呼び出してMRSを初期化し、<br>
+メインループで <code>mrs_update()</code>を呼び出し、<br>
+<code>mrs_finalize()</code>で終了処理を実行します。</p>
+
+<p>以下は最小限のアプリケーションコードの例です。<br>
+動作するソースの全体は、サンプルの <code>base_loop.cpp</code>を参照してください。</p>
+
+<pre><code>#include &lt;mrs.hpp&gt;
+int main(){
+    mrs_initialize();
+    while(true) {
+        mrs_update();
+        mrs_sleep(1000);
+    }
+    mrs_finalize();
+    return 0;
+}     
+</code></pre>
+
+<p>上記の例ではMRSを用いた通信を行っていません。<br>
+通信をするためにはさらにいくつかの設定が必要です。</p>
+
+<h2>MRSで通信をするための初期化コード例</h2>
+
+<p>実際に通信をするソースの全体は、サンプルの <code>echo_server.cpp</code>と、<br>
+<code>echo_client.cpp</code>を参照してください。</p>
+
+<p>TCPのサーバを開始するには、mrs_initialize()を呼び出した後、次のようにします。</p>
+
+<pre><code>MrsServer tcp_server = mrs_server_create( MRS_CONNECTION_TYPE_TCP, &quot;0.0.0.0&quot;, 22222, 10 );
+</code></pre>
+
+<p>これだけでローカルアドレス&quot;0.0.0.0&quot;, ポート番号22222,<br>
+listenバックログ10の設定でTCPサーバーが起動します。<br>
+ただしこのままでは、何の仕事も提供できません。</p>
+
+<p>新しい接続を受け入れたこと(TCPソケットをacceptしたこと)を検出して仕事を開始するには、<br>
+tcp_serverにコールバック関数(on_new_connection_tcp)を登録します。</p>
+
+<pre><code>mrs_server_set_new_connection_callback( tcp_server, on_new_connection_tcp );                               
+</code></pre>
+
+<p>コールバック関数の実体はアプリケーションで定義します。<br>
+新しく受け入れたTCPソケットは、レコードを受信して通信をすることですから、<br>
+clientに対してレコードを一つ受信するごとに1回呼び出されるコールバック関数、<br>
+on_read_recordを、 mrs_set_read_record_callback関数を用いて設定します。</p>
+
+<pre><code>void on_new_connection_tcp( MrsServer server, void *server_data, MrsConnection client ){
+    mrs_set_read_record_callback( client, on_read_record );
+}     
+</code></pre>
+
+<p>on_read_record関数の実体は、やはりアプリケーションで定義します。</p>
+
+<pre><code>void on_read_record( MrsConnection connection, void *connection_data, uint32 seqnum, uint16 options, uint16 payload_type, const void* payload, uint32 payload_len ){
+    switch ( payload_type ){                                                                                       
+    case 0x01:
+        mrs_write_record( connection, options, payload_type, payload, payload_len );                               
+        break;
+    default:
+        break;
+    }
+}           
+</code></pre>
+
+<p>上記の例は、受信したパケットをそのまま正確に返信する、エコー(こだま)をするサーバーの例です。<br>
+mrs_write_record関数で受信したものとまったく同じ内容のレコードをconnectionに対して送出しています。</p>
+
+<p>connection_dataは接続にひも付けられている任意のアプリケーションデータへのポインタ、<br>
+seqnumはレコードの通し番号、optionsは暗号化などのレコードの各種設定、<br>
+payload_typeはアプリケーションが規定の値の範囲で自由に定義する値で、キャラクターの同期なら0x10, 攻撃アクションなら0x11,<br>
+のように処理を分けるために使います。上記の例では 0x01だけを定義しています。<br>
+payloadはアプリケーションが自由に構成したバイナリデータの先頭アドレスへのポインタで、<br>
+これがレコードで送信するデータの中身になります。<br>
+payload_lenはpayloadの有効な長さを指定します。</p>
+
+<p>上記のようにサーバーの設定をした後、サーバのメインループの中で　mrs_update()関数を呼び出し続けることで、<br>
+サービスを継続します。<br>
+mrs_update()関数は、ソケットの状態を確認し、データを実際にシステムコールを呼び出して送信したり受信する処理を行います。</p>
+
+<p>以上でエコーサーバーの実装は終わりです。</p>
+
+<p>次はクライアント側のアプリケーションコードを見ます。</p>
+
+<p>クライアント側では、サーバーへの接続を以下のようにして初期化します。</p>
+
+<pre><code>MrsConnection client = mrs_connect( MRS_CONNECTION_TYPE_TCP, &quot;192.168.1.121&quot;, 22222, 10000 );
+</code></pre>
+
+<p>上記により、TCPクライアントをひとつ作り、IPv4アドレス 192.168.1.121、<br>
+ポート番号22222にタイムアウト10秒(1万ms)で接続処理を開始します。</p>
+
+<p>サーバから送信されてきたレコードを受信するためには、次の例のように<br>
+サーバの場合と同様に、 mrs_set_read_record_callback関数を用いてコールバック関数を登録します。</p>
+
+<pre><code>mrs_set_read_record_callback( client, on_read_record );                                                    
+</code></pre>
+
+<p>また、クライアントのGUIでボタンが押されたときなどに、能動的にレコードをサーバに対して送信するためには、<br>
+サーバでも使用した mrs_write_record関数を使って任意のデータ(ペイロード)を送信します。</p>
+
+<pre><code>mrs_write_record( client, 0, 0x01, &quot;hello&quot;, 5 );
+</code></pre>
+
+<p>上記の例では、clientに対して、オプションの値は0(暗号化無し)、<br>
+ペイロードタイプは0x01、データは文字列の &quot;hello&quot;、長さは5を送信しています。<br>
+ペイロードタイプに0x01を設定することで、<br>
+サーバ側のswitch文の case 0x01:に対応している部分で受信処理を書くことができます。</p>
+
+<p>クライアント側での設定は以上です。　設定をしたあとは、<br>
+サーバと同様にメインループで mrs_update()関数を呼び出し続ければ、<br>
+レコードの送受信をすることができます。</p>
+
+<h2>C#版MRS APIについて</h2>
+
+<p>C#において、MRS APIを使用するには以下のクラス使用する、または派生したクラスを使用すると簡単に実装する事が可能になります。  </p>
+
+<pre><code>// MRSクラス
+public class Mrs{
+    ...
+}
+
+以下のフォルダに配置されています。
+mrs\sample\csharp\libmrs\Monobit\mrs\Mrs.cs
+</code></pre>
+
+<h3>C++版とC#版との違い</h3>
+
+<p>Mrsクラス内でmrs.dllをDllImportして使用するため、C++版のMRS APIと使い勝手は変わりません。<br><br>
+ただし言語の違いがあるため、引数にあるポインタに関してはIntPtrに変更されています。  </p>
+
+<hr />
+<address>Copyright &#169; 2019 MONOBIT ENGINE Inc.</address>
+</body>
+</html>

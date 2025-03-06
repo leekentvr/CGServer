@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>index</title>
+  <meta name="author" content="MONOBIT ENGINE Inc." />
+  <link rel="stylesheet" href="github.css" type="text/css" />
+  <link rel="icon" href="favicon.ico" />
+</head>
+<body>
+<h1>MRS リリースパッケージ</h1>
+
+<p>このディレクトリには、MRS製品群のバイナリ配布用パッケージが含まれています。</p>
+
+<h2>ディレクトリ構成</h2>
+
+<pre><code>  +- mrs               MRSのコアAPI
+  +- mrs_room          MRS Roomサーバ
+  +- mrs_ws            MRSでWebSocketを扱う場合のサンプル
+  +- VERSION.txt       技術サポートの時に使うバージョン記述ファイル
+</code></pre>
+
+<p>上記に含まれるそれぞれの製品の概要は、以下の通りです。</p>
+
+<ul>
+<li>mrs : MRSのコアAPIです。C++用のライブラリ本体、ヘッダ、ドキュメント、サンプルコードを含みます。
+ドキュメントは、 <a href="mrs/documents/MRS_API_Overview.html">MRS_API_Overview.html</a> を参照してください。</li>
+<li>mrs_room : 「ルーム」への参加と脱退という概念を用いてマルチプレイゲームのデータ同期を行うための「ルームサーバ」
+を実装するために必要なライブラリ、ヘッダ、ドキュメント、サンプルコードを含みます。
+ルームサーバは、サンプルコードを拡張してゲームの専用サーバーを実装することを念頭に設計されています。
+ドキュメントは、 <a href="mrs_room/documents/ROOM_API_Overview.html">ROOM_API_Overview.html</a> を参照してください。</li>
+<li>mrs_ws：MRSライブラリのWebSocket用のクライアントライブラリで、<br>
+ブラウザで動作するJavaScriptのラッパーとサンプルコード、テストコードを含みます。<br>
+ドキュメントは mrs_ws/documents/ ディレクトリに格納されています。<br>
+<br>
+全体の概要については、 <a href="mrs_ws/documents/MRS_WebSocket_Overview.html">MRS_WebSocket_Overview.html</a>　を参照してください。<br>
+<br>
+サンプルゲームのソース解説は <a href="mrs_ws/documents/MRS_WebSocket_Samplegame.html">MRS_WebSocket_Samplegame.html</a>　を参照してください。<br>
+<br>
+自動テストの方法については、 <a href="mrs_ws/documents/MRS_WebSocket_Testing.html">MRS_WebSocket_Testing.html</a>　を参照してください。</li>
+</ul>
+
+<h2>製品の階層構造</h2>
+
+<p>MRS製品群は、以下のような階層構造をもっています。</p>
+
+<pre border>
+        　　ゲームなどのアプリケーション
+------------------------------------------------------
+ mrs_room|pusher|ws などの上位ライブラリ/アプリケーション群
+------------------------------------------------------
+      MRS (Monobit Revolution Server) コアライブラリ
+------------------------------------------------------
+      libuv, OpenSSL などの依存ライブラリ
+------------------------------------------------------
+              ソケットAPI 
+------------------------------------------------------
+  LinuxやWindowsなどのオペレーティングシステム層  
+</pre>
+
+<hr>
+
+<p>変更履歴は、<a href="ChangeLog.html">ChangeLog.html</a> を参照してください。</p>
+
+<hr />
+<address>Copyright &#169; 2019 MONOBIT ENGINE Inc.</address>
+</body>
+</html>

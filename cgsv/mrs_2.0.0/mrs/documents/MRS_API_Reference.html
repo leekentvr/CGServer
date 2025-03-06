@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title> MRS APIリファレンス</title>
+  <meta name="author" content="Monobit Inc." />
+  <link rel="stylesheet" href="github.css" type="text/css" />
+</head>
+<body>
+<BR>
+<BR>
+<h1>MRS APIリファレンス</h1>
+<BR>
+本文書はMRSライブラリが提供する全ての関数や型の解説をします。<BR>
+<BR>
+<h2>MRSライブラリ全体を操作する関数</h2>
+ライブラリ自体の初期化、状態更新、停止、削除などを行います。<BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> bool  <a name='mrs_initialize'></a><a href='#mrs_initialize'>mrs_initialize</a>()</code>
+<p>MRSのライブラリに必要なメモリを割り当てて初期化を行います</p>
+<B>引数</B><BR>なし<BR>
+<B>返り値</B><BR>
+成功したらtrue, メモリが足りないなどの場合にfalseを返します。<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_update'></a><a href='#mrs_update'>mrs_update</a>()</code>
+<p>MRSライブラリの状態を更新します</p>
+<B>引数</B><BR>なし<BR>
+<B>返り値</B><BR>
+なし<BR>
+<B>説明</B><BR>
+内部でOSに対してポーリングを行い、MRSが監視しているソケットにデータが到着している場合は<br>
+必要なコールバックを呼び出し、また送信が可能な場合はソケットに対してデータ(レコード)を送信します。<br>
+OSに対する入出力はすべてここで行われます。<br></div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_update_keep_alive'></a><a href='#mrs_update_keep_alive'>mrs_update_keep_alive</a>()</code>
+<p>MRSライブラリの全コネクションのキープアライブ状態を更新します</p>
+<B>引数</B><BR>なし<BR>
+<B>返り値</B><BR>
+なし<BR>
+<B>説明</B><BR>
+キープアライブ対象のソケットに対してデータ(レコード)を送信します。<br></div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_run'></a><a href='#mrs_run'>mrs_run</a>( uint32 sleep_msec )</code>
+<p>スリープしながらループし続けます</p>
+<B>引数</B><BR>なし<BR>
+<B>返り値</B><BR>
+なし<BR>
+<B>説明</B><BR>
+動作中にmrs_stop_running() 関数を呼び出すことでループから抜けることができます。<br>
+<br></div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_stop_running'></a><a href='#mrs_stop_running'>mrs_stop_running</a>()</code>
+<p>mrs_runのループを停止します</p>
+<B>引数</B><BR>なし<BR>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_finalize'></a><a href='#mrs_finalize'>mrs_finalize</a>()</code>
+<p>MRSライブラリが確保しているメモリをすべて解放します</p>
+<B>引数</B><BR>なし<BR>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<h2>接続数を操作するための関数</h2>
+TCPまたはUDPクライアントの接続数を取得、設定するための関数群です。<BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> uint32  <a name='mrs_get_connection_num_hard_limit'></a><a href='#mrs_get_connection_num_hard_limit'>mrs_get_connection_num_hard_limit</a>()</code>
+<p>MRSライブラリに埋め込まれている、同時接続数の絶対的な最大値(ハードリミット値)を返します</p>
+<B>引数</B><BR>なし<BR>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> uint32  <a name='mrs_get_connection_num_soft_limit'></a><a href='#mrs_get_connection_num_soft_limit'>mrs_get_connection_num_soft_limit</a>()</code>
+<p>アプリケーションがMRSライブラリに設定しているクライアントの最大接続数(ソフトリミット値)を返します。</p>
+<B>引数</B><BR>なし<BR>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> bool  <a name='mrs_set_connection_num_soft_limit'></a><a href='#mrs_set_connection_num_soft_limit'>mrs_set_connection_num_soft_limit</a>( uint32 value )</code>
+<p>MRSライブラリ全体の最大接続数を設定します。ハードリミット値以下の値を設定できます。これをソフトリミットと呼びます。</p>
+<B>引数</B><BR>なし<BR>
+<B>返り値</B><BR>
+設定できたらtrue, 失敗したらfalse。<BR>
+<B>説明</B><BR>
+```mrs_get_connection_num_hard_limit```関数が返す値より大きな値は設定できません。<br></div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> uint32  <a name='mrs_get_connection_num'></a><a href='#mrs_get_connection_num'>mrs_get_connection_num</a>()</code>
+<p>全体の接続しているクライアント数を返します</p>
+<B>引数</B><BR>なし<BR>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> uint32  <a name='mrs_server_get_connection_num'></a><a href='#mrs_server_get_connection_num'>mrs_server_get_connection_num</a>( MrsServer server )</code>
+<p>サーバーあたりの接続しているクライアント数を返します</p>
+<B>引数</B><BR>なし<BR>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<h2>サーバを操作するための関数</h2>
+TCPまたはUDPのサーバを作成、削除、設定するための関数群です。<BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> MrsServer  <a name='mrs_server_create'></a><a href='#mrs_server_create'>mrs_server_create</a>( MrsConnectionType type, const char* addr, uint16 port, int32 backlog )</code>
+<p>TCPまたはUDP(RUDPを含む)のサーバーを作成して返します</p>
+<B>引数</B><BR> <table>
+<tr><td>type</td><td> 接続の種類。MRS_CONNECTION_TYPE_TCP, MRS_CONNECTION_TYPE_UDP,MRS_CONNECTION_TYPE_WS, MRS_CONNECTION_TYPE_WSS のいずれかを設定します</td></tr>
+<tr><td>addr</td><td> 受け入れるソケットのローカルアドレスをIPv4アドレスの数字表現で指定します。ドメイン名では指定できません。 インターネットの不特定多数向けのサービスの場合は "0.0.0.0"を指定し、ローカルマシンからのみに制限する場合は "127.0.0.1"を指定します。それ以外のアドレスも指定可能です。</td></tr>
+<tr><td>port</td><td> TCPまたはUDPのポート番号を指定します。0~65535の範囲で決定してください。</td></tr>
+<tr><td>backlog</td><td> TCPの場合はソケットのバックログの数(OSが保持している、acceptが呼び出される前のソケットの数)を指定します。短時間に大量の新しい接続を受け入れるようなサービスの場合にこれを大きくしてください。通常は10で問題ありません。UDPの場合は、1つのMrsServerあたりの最大の同時接続数を指定します。</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+<B>説明</B><BR>
+この関数が返すMrsServerに対して、 ```mrs_set_error_callback```関数を使ってエラー検出用コールバック関数を定義すると、<br>
+OS資源が足りないなどの何らかの原因で新規接続を受け入れることができなかった場合のエラーを検出することができます。<br>
+詳細は ```mrs_set_error_callback```関数の項を参照してください。<br></div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_server_set_new_connection_callback'></a><a href='#mrs_server_set_new_connection_callback'>mrs_server_set_new_connection_callback</a>( MrsServer server, MrsNewConnectionCallback callback )</code>
+<p>MRSサーバが新しい接続を受け入れたときに呼び出すコールバック関数を定義します</p>
+<B>引数</B><BR> <table>
+<tr><td>server</td><td> 設定する対象となるサーバ</td></tr>
+<tr><td>callback</td><td> アプリケーションが定義するコールバック関数へのポインタ。コールバック関数のプロトタイプは次のようになっています。 <code>void new_conn_callback( MrsServer server, MrsConnection client )</code> このコールバックでは第1引数にサーバ、第2引数に新しいクライアントが渡されます。</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+<B>説明</B><BR>
+<br></div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> bool  <a name='mrs_server_set_data'></a><a href='#mrs_server_set_data'>mrs_server_set_data</a>( MrsServer server, void* server_data )</code>
+<p>MrsServer に対して任意のポインタをひも付けます</p>
+<B>引数</B><BR> <table>
+<tr><td>server</td><td> 設定する対象となるサーバ</td></tr>
+<tr><td>server_data</td><td> 任意のデータへのポインタ</td></tr>
+</table>
+<B>返り値</B><BR>
+設定できたらtrue, 失敗したらfalse。有効なサーバーを指定する必要があります。<BR>
+<B>説明</B><BR>
+ひとつのプロセスで複数のサーバを起動し、同じ新規接続コールバック関数を登録した場合でも、<br>
+このポインタの値を使って、どのサーバに対する新規接続なのかを識別することができます。<br></div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void*  <a name='mrs_server_get_data'></a><a href='#mrs_server_get_data'>mrs_server_get_data</a>( MrsServer server )</code>
+<p>MrsServerに対してひも付けられているポインタ値を取得します</p>
+<B>引数</B><BR> <table>
+<tr><td>server</td><td> 設定する対象となるサーバ</td></tr>
+</table>
+<B>返り値</B><BR>
+設定されているポインタの現在の値<BR>
+</div> <!-- fn/cbfn end --><BR>
+<h2>クライアントを操作するための関数</h2>
+MRSのサーバに接続して通信をするクライアントを作成、設定します。<BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> MrsConnection  <a name='mrs_connect'></a><a href='#mrs_connect'>mrs_connect</a>( MrsConnectionType type, const char* addr, uint16 port, uint32 timeout_msec )</code>
+<p>新しい接続(MrsConnection)をひとつ割り当てて初期化し、接続を開始します。</p>
+<B>引数</B><BR> <table>
+<tr><td>type</td><td> 使用するトランスポート層プロトコルを指定します。サーバと同じ値を指定してください。</td></tr>
+<tr><td>addr</td><td> サーバが待ち受けているホストのIPv4アドレスを "192.168.1.232"のような数字の表現で指定します。</td></tr>
+<tr><td>port</td><td> TCPまたはUDPのポート番号を指定します。0~65535の範囲で決定してください。</td></tr>
+<tr><td>timeout_msec</td><td> 接続失敗と判定されるまでのタイムアウト時間をミリ秒で指定します。</td></tr>
+</table>
+<B>返り値</B><BR>
+新しく割り当てられた接続<BR>
+<B>説明</B><BR>
+mrs_connect関数は接続を開始するだけで、実際のトランスポート層パケットはこの関数を呼び出しても送信されません。<br>
+実際のパケットは、後でmrs_update関数を呼び出すことによって送信されます。<br></div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_set_connect_callback'></a><a href='#mrs_set_connect_callback'>mrs_set_connect_callback</a>( MrsConnection connection, MrsConnectCallback callback )</code>
+<p>サーバへの接続が完了したことを検出するためのコールバック関数を設定します</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> 設定する対象となる接続</td></tr>
+<tr><td>callback</td><td> コールバック関数</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+<B>説明</B><BR>
+mrs_connect関数で作られた接続(MrsConnection)に対して、その接続が実際に接続が成功したことを検出するための<br>
+コールバック関数を設定します。コールバック関数は接続ごとに設定する必要があります。<br>
+接続ごとに異なるコールバック関数を設定することも可能です。<br></div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_set_disconnect_callback'></a><a href='#mrs_set_disconnect_callback'>mrs_set_disconnect_callback</a>( MrsConnection connection, MrsDisconnectCallback callback )</code>
+<p>接続が切れたときに呼び出されるコールバック関数を設定します</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> 設定する対象となる接続</td></tr>
+<tr><td>callback</td><td> コールバック関数のポインタ</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+<B>説明</B><BR>
+サーバーが起動していない場合やファイアウォールなど、何らかの原因によって接続に失敗した場合は、このコールバック関数は呼ばれず、 mrs_set_error_callback 関数で設定したコールバック関数が呼び出されます。<br></div> <!-- fn/cbfn end --><BR>
+<h2>クライアントとサーバの両方で共通に使う関数</h2>
+レコードの受信、送信、エラーハンドリングなどを行うための関数です。<BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_set_error_callback'></a><a href='#mrs_set_error_callback'>mrs_set_error_callback</a>( MrsConnection connection, MrsErrorCallback callback )</code>
+<p>接続において何らかのエラーが発生したことを検出するためのコールバック関数を設定します</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> 設定する対象となる接続</td></tr>
+<tr><td>callback</td><td> コールバック関数のポインタ</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_set_read_record_callback'></a><a href='#mrs_set_read_record_callback'>mrs_set_read_record_callback</a>( MrsConnection connection, MrsReadRecordCallback callback )</code>
+<p>接続において接続相手が送信したレコードを1個受信するごとに1回呼ばれるコールバック関数を設定します</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> 設定する対象となる接続</td></tr>
+<tr><td>callback</td><td> コールバック関数のポインタ</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_set_read_callback'></a><a href='#mrs_set_read_callback'>mrs_set_read_callback</a>( MrsConnection connection, MrsReadCallback callback )</code>
+<p>接続において接続相手が送信したバイナリデータを受信するごとに1回呼ばれるコールバック関数を設定します</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> 設定する対象となる接続</td></tr>
+<tr><td>callback</td><td> コールバック関数のポインタ</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> bool  <a name='mrs_connection_set_data'></a><a href='#mrs_connection_set_data'>mrs_connection_set_data</a>( MrsConnection connection, void* connection_data )</code>
+<p>接続に対して、アプリケーションが任意のポインタをひも付けます</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> 設定する対象となる接続</td></tr>
+<tr><td>connection_data</td><td> 任意のデータへのポインタ</td></tr>
+</table>
+<B>返り値</B><BR>
+設定に成功したらtrue, 失敗したらfalse<BR>
+<B>説明</B><BR>
+任意のポインタを使って、プレイヤーキャラクタなどのアプリケーションの内部データをMRSの接続に関連付けることが簡単にできます。<br></div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void*  <a name='mrs_connection_get_data'></a><a href='#mrs_connection_get_data'>mrs_connection_get_data</a>( MrsConnection connection )</code>
+<p>mrs_connection_set_data 関数で設定したポインタの値を取得します</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> 設定する対象となる接続</td></tr>
+</table>
+<B>返り値</B><BR>
+設定されていたポインタの値<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> bool  <a name='mrs_connection_is_connected'></a><a href='#mrs_connection_is_connected'>mrs_connection_is_connected</a>( MrsConnection connection )</code>
+<p>MrsConnectionがサーバへの接続を完了しているかどうかを調べます</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> ポインタを取り出す対象トなる接続</td></tr>
+</table>
+<B>返り値</B><BR>
+接続できていて、データを送信可能な状態ならtrueを返します。<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> bool  <a name='mrs_connection_set_readbuf_max_size'></a><a href='#mrs_connection_set_readbuf_max_size'>mrs_connection_set_readbuf_max_size</a>( MrsConnection connection, uint32 value )</code>
+<p>MrsConnectionの読み込みバッファの最大サイズを設定します</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> 設定対象の接続</td></tr>
+<tr><td>value</td><td> 読み込みバッファの最大サイズ</td></tr>
+</table>
+<B>返り値</B><BR>
+設定できたなら、trueを返します<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> uint32  <a name='mrs_connection_get_readbuf_max_size'></a><a href='#mrs_connection_get_readbuf_max_size'>mrs_connection_get_readbuf_max_size</a>( MrsConnection connection )</code>
+<p>MrsConnectionの読み込みバッファの最大サイズを取得します</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> 設定対象の接続</td></tr>
+</table>
+<B>返り値</B><BR>
+読み込みバッファの最大サイズ<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> MrsConnectionType  <a name='mrs_connection_get_type'></a><a href='#mrs_connection_get_type'>mrs_connection_get_type</a>( MrsConnection connection )</code>
+<p>MrsConnectionに設定されているプロトコルを返します</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> 対象となる接続</td></tr>
+</table>
+<B>返り値</B><BR>
+MrsConnectionに設定されているプロトコルを返します<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> bool  <a name='mrs_connection_set_path'></a><a href='#mrs_connection_set_path'>mrs_connection_set_path</a>( MrsConnection connection, const char* value )</code>
+<p>MrsConnectionの接続先のパスを設定します</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> 設定対象の接続</td></tr>
+<tr><td>value</td><td> 接続先のパス</td></tr>
+</table>
+<B>返り値</B><BR>
+設定できたなら、trueを返します<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> const char*  <a name='mrs_connection_get_path'></a><a href='#mrs_connection_get_path'>mrs_connection_get_path</a>( MrsConnection connection )</code>
+<p>MrsConnectionの接続先のパスを取得します</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> 設定対象の接続</td></tr>
+</table>
+<B>返り値</B><BR>
+MrsConnectionに設定されている接続先のパスを返します<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> bool  <a name='mrs_write_record'></a><a href='#mrs_write_record'>mrs_write_record</a>( MrsConnection connection, uint16 options, uint16 payload_type, const void* payload, uint32 payload_len )</code>
+<p>接続に対して、レコードを1個送信します</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> レコードを送信する対象となる接続</td></tr>
+<tr><td>options</td><td> レコードを送信するときのオプションを設定します。オプションはレコードごとに異なる値を設定できます。　設定可能な値は、MrsRecordOption列挙体で定義されている定数を、ORビット演算子でつないで複数同時に指定可能です。</td></tr>
+<tr><td>payload_type</td><td> 送信したいデータの種別をアプリケーションが自由に指定します。PAYLOAD_TYPE_BEGIN と MRS_PAYLOAD_TYPE_END の間の値を設定してください。 PAYLOAD_TYPE_BEGINは現在は0, MRS_PAYLOAD_TYPE_ENDは現在は0xffとなっていますが、将来は変更される可能性があります。</td></tr>
+<tr><td>payload</td><td> 送信したいデータの先頭アドレスです。データの内容はバイナリデータで、0を含んでいても問題なく送信できます。</td></tr>
+<tr><td>payload_len</td><td> 送信したいデータの長さ(バイト)です。</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+<B>説明</B><BR>
+この関数を呼び出した時点では実際に送信されず、次の mrs_update 関数の呼び出し時に可能な限り送信しようとします。<br>
+ただし、OSやソケットの状態によっては、次の呼び出しで確実に送信されるとは限りません。<br>
+送信の準備が成功したらtrue,メモリが足りないなどによって失敗したらfalseが返されます。<br>
+MRSはレコードを送信するときに内部的に通し番号を付与します。<br></div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> bool  <a name='mrs_write'></a><a href='#mrs_write'>mrs_write</a>( MrsConnection connection, const void* data, uint32 data_len )</code>
+<p>接続に対して、バイナリデータを送信します</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> レコードを送信する対象となる接続</td></tr>
+<tr><td>data</td><td> 送信したいデータの先頭アドレスです。データの内容はバイナリデータで、0を含んでいても問題なく送信できます。</td></tr>
+<tr><td>data_len</td><td> 送信したいデータの長さ(バイト)です。</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+<B>説明</B><BR>
+この関数を呼び出した時点では実際に送信されず、次の mrs_update 関数の呼び出し時に可能な限り送信しようとします。<br>
+ただし、OSやソケットの状態によっては、次の呼び出しで確実に送信されるとは限りません。<br>
+MRSはレコードを送信するときに内部的に通し番号を付与します。<br></div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_close'></a><a href='#mrs_close'>mrs_close</a>( MrsConnection connection )</code>
+<p>接続を閉じます</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> 操作対象の接続</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+<B>説明</B><BR>
+この関数を呼んだ時点では、実際の接続終了の通信は行われず、次のmrs_update 関数の呼び出し時に実行されます。<br></div> <!-- fn/cbfn end --><BR>
+<h2>暗号化通信を使うための関数</h2>
+MRSでは、MrsCipherを作成し、それを接続ごとに登録することで暗号化通信を行います。<BR>
+そのため接続ごとに暗号の種類を切り替えることが可能なように設計されています(現在はECDHのみが利用可能)。<BR>
+<BR>
+送信するレコード単位で暗号の有効化をon/offすることもできます。<BR>
+それにはレコードを送信する mrs_write_record  関数のオプションに暗号化利用モードを設定します。<BR>
+ただし、暗号化オプションを有効化するためには、暗号に使う鍵をあらかじめ交換し終わっている必要があります。<BR>
+<BR>
+鍵交換をするためには、 MrsCipherを mrs_cipher_create 関数を使って作成し、<BR>
+それを mrs_set_cipher関数を使って接続に登録し、 mrs_key_exchange 関数を使って鍵交換の通信を起動します。　<BR>
+それ以降の必要な通信や数値計算の処理は、MRSが内部的に自動で行います。<BR>
+MRSは、鍵交換が無事に終了したことをアプリケーションに対してコールバック関数を使って通知します。<BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> MrsCipher  <a name='mrs_cipher_create'></a><a href='#mrs_cipher_create'>mrs_cipher_create</a>( MrsCipherType type )</code>
+<p>MrsCipherを作成します</p>
+<B>引数</B><BR> <table>
+<tr><td>type</td><td> 鍵交換アルゴリズムの種類を指定します。 現在利用可能なのは MRS_CIPHER_TYPE_ECDH のみです。</td></tr>
+</table>
+<B>返り値</B><BR>
+作成されたMrsCipher<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_set_cipher'></a><a href='#mrs_set_cipher'>mrs_set_cipher</a>( MrsConnection connection, MrsCipher cipher )</code>
+<p>接続に対してMrsCipherを登録します。</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> 登録対象となる接続</td></tr>
+<tr><td>cipher</td><td> 登録したいMrsCipher</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> bool  <a name='mrs_key_exchange'></a><a href='#mrs_key_exchange'>mrs_key_exchange</a>( MrsConnection connection, MrsKeyExchangeCallback callback )</code>
+<p>鍵交換を開始するよう指示します</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> 鍵交換を開始する接続</td></tr>
+<tr><td>callback</td><td> 鍵交換が完了したときに呼び出されるコールバック関数</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+<B>説明</B><BR>
+鍵交換は、クライアントまたはサーバから、本関数を呼んだ時に「鍵交換リクエスト」を互いに送信し、<br>
+それに対して「鍵交換レスポンス」を互いに返すという動作をします。<br>
+この関数を呼ぶと、鍵交換リクエストを送信します。　送信に成功したらtrue、失敗したらfalseを返します。<br></div> <!-- fn/cbfn end --><BR>
+<h2>ログ出力をするための関数</h2>
+MRSはライブラリ内部の動作ログを、 mrs_log_output関数を使って出力します。<BR>
+この関数をアプリケーションでも使うことができます。MRSのログ出力は、<BR>
+ログを出力するたびにコールバック関数を呼ぶことで実現されます。<BR>
+デフォルトの状態で mrs_console_log関数が設定されていますが、<BR>
+それを mrs_set_log_callback関数を用いてアプリケーションの独自のものに置き換えることができます。<BR>
+<BR>
+ログ出力レベルはプロセス全体でひとつで、設定した値以上(値自体を含む)のレベルのログが出力されます。<BR>
+出力レベルは、 EMERGが最高でDEBUGが最低です。詳細は MrsLogLevel 列挙体の定義を参照してください。<BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> MrsLogLevel  <a name='mrs_get_output_log_level'></a><a href='#mrs_get_output_log_level'>mrs_get_output_log_level</a>()</code>
+<p>現在設定されているログ出力レベルの値を取得します</p>
+<B>引数</B><BR>なし<BR>
+<B>返り値</B><BR>
+現在のログ出力レベル<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_set_output_log_level'></a><a href='#mrs_set_output_log_level'>mrs_set_output_log_level</a>( MrsLogLevel level )</code>
+<p>MRSライブラリのログ出力レベルを設定します</p>
+<B>引数</B><BR> <table>
+<tr><td>level</td><td> 設定するログ出力レベル</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> bool  <a name='mrs_is_output_log_level'></a><a href='#mrs_is_output_log_level'>mrs_is_output_log_level</a>( MrsLogLevel level )</code>
+<p>MRSライブラリのログ出力可能なレベルか判定します</p>
+<B>引数</B><BR> <table>
+<tr><td>level</td><td> 判定するログ出力レベル</td></tr>
+</table>
+<B>返り値</B><BR>
+ログ出力可能なら、trueを返します<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_output_log'></a><a href='#mrs_output_log'>mrs_output_log</a>( MrsLogLevel level, const char* msg )</code>
+<p>ログレベルを指定してログを出力します</p>
+<B>引数</B><BR> <table>
+<tr><td>level</td><td> 出力したいログのレベル</td></tr>
+<tr><td>msg</td><td> メッセージ</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> MrsLogOutputCallback  <a name='mrs_get_log_callback'></a><a href='#mrs_get_log_callback'>mrs_get_log_callback</a>()</code>
+<p>ログを出力するために設定されているコールバック関数を取得します</p>
+<B>引数</B><BR>なし<BR>
+<B>返り値</B><BR>
+現在設定されているコールバック関数<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_set_log_callback'></a><a href='#mrs_set_log_callback'>mrs_set_log_callback</a>( MrsLogOutputCallback callback )</code>
+<p>ログを出力するためのコールバック関数を設定します</p>
+<B>引数</B><BR> <table>
+<tr><td>callback</td><td> コールバック関数</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_console_log'></a><a href='#mrs_console_log'>mrs_console_log</a>( MrsLogLevel level, const char* msg )</code>
+<p>MRSのログを標準出力に出力する関数</p>
+<B>引数</B><BR> <table>
+<tr><td>level</td><td> mrs_output_log関数に指定されたログ出力レベルがそのまま渡されます</td></tr>
+<tr><td>msg</td><td> mrs_output_log関数に指定されたログメッセージがそのまま渡されます</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+<B>説明</B><BR>
+mrs_console_log関数は、MRSライブラリのデフォルトのログ出力コールバック関数としてあらかじめ設定されています。<br>
+この関数は、 mrs_set_log_callback関数を使って置き換えることができます。<br></div> <!-- fn/cbfn end --><BR>
+<h2>エラーコードを扱うための関数</h2>
+MRSライブラリ内部のエラー状態は、ライブラリでひとつの変数に格納されています。<BR>
+mrs_get_last_error関数でその値を取得し、 mrs_get_error_string関数で文字列に変換できます。<BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> MrsError  <a name='mrs_get_last_error'></a><a href='#mrs_get_last_error'>mrs_get_last_error</a>()</code>
+<p>MRSの関数内部で起きたエラーの種類を返します</p>
+<B>引数</B><BR>なし<BR>
+<B>返り値</B><BR>
+エラーコード。値の詳細は MrsErrorを参照してください<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> const char*  <a name='mrs_get_error_string'></a><a href='#mrs_get_error_string'>mrs_get_error_string</a>( MrsError error )</code>
+<p>エラー番号を文字列に変換します</p>
+<B>引数</B><BR> <table>
+<tr><td>error</td><td> エラーコード。通常は mrs_get_last_errorの値を入力します</td></tr>
+</table>
+<B>返り値</B><BR>
+エラーを説明する文字列<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> const char*  <a name='mrs_get_connection_error_string'></a><a href='#mrs_get_connection_error_string'>mrs_get_connection_error_string</a>( MrsConnectionError error )</code>
+<p>接続に関するエラー番号を文字列に変換します</p>
+<B>引数</B><BR> <table>
+<tr><td>error</td><td> エラーコード。通常は MrsErrorCallbackのstatus値を入力します</td></tr>
+</table>
+<B>返り値</B><BR>
+エラーを説明する文字列<BR>
+</div> <!-- fn/cbfn end --><BR>
+<h2>その他の便利な関数</h2>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_sleep'></a><a href='#mrs_sleep'>mrs_sleep</a>( uint32 sleep_msec )</code>
+<p>指定した時間だけスレッドの実行を停止する</p>
+<B>引数</B><BR> <table>
+<tr><td>sleep_msec</td><td> 現在のスレッドを停止するミリ秒数</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_set_ssl_certificate_data'></a><a href='#mrs_set_ssl_certificate_data'>mrs_set_ssl_certificate_data</a>( const char* data )</code>
+<p>SSL証明書データの設定</p>
+<B>引数</B><BR> <table>
+<tr><td>data</td><td> SSL証明書データ</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_set_ssl_private_key_data'></a><a href='#mrs_set_ssl_private_key_data'>mrs_set_ssl_private_key_data</a>( const char* data )</code>
+<p>SSL秘密鍵データの設定</p>
+<B>引数</B><BR> <table>
+<tr><td>data</td><td> SSL秘密鍵データ</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_set_keep_alive_update_msec'></a><a href='#mrs_set_keep_alive_update_msec'>mrs_set_keep_alive_update_msec</a>( uint32 update_msec )</code>
+<p>キープアライブ更新時間の設定</p>
+<B>引数</B><BR> <table>
+<tr><td>update_msec</td><td> キープアライブを更新するミリ秒数</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> uint32  <a name='mrs_get_keep_alive_update_msec'></a><a href='#mrs_get_keep_alive_update_msec'>mrs_get_keep_alive_update_msec</a>()</code>
+<p>キープアライブ更新時間の取得</p>
+<B>引数</B><BR>なし<BR>
+<B>返り値</B><BR>
+キープアライブを更新するミリ秒数<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_set_version'></a><a href='#mrs_set_version'>mrs_set_version</a>( const char* key, uint32 value )</code>
+<p>バージョンの設定</p>
+<B>引数</B><BR> <table>
+<tr><td>key</td><td> 設定対象バージョンのキー</td></tr>
+<tr><td>value</td><td> 設定対象バージョンの値</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> uint32  <a name='mrs_get_version'></a><a href='#mrs_get_version'>mrs_get_version</a>( const char* key )</code>
+<p>バージョンの取得</p>
+<B>引数</B><BR> <table>
+<tr><td>key</td><td> 取得対象バージョンのキー</td></tr>
+</table>
+<B>返り値</B><BR>
+バージョン<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> uint32  <a name='mrs_connection_get_remote_version'></a><a href='#mrs_connection_get_remote_version'>mrs_connection_get_remote_version</a>( MrsConnection connection, const char* key )</code>
+<p>接続先のバージョンの取得</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> 取得対象の接続</td></tr>
+<tr><td>key</td><td> 取得対象バージョンのキー</td></tr>
+</table>
+<B>返り値</B><BR>
+接続先のバージョン<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_udp_set_mtu'></a><a href='#mrs_udp_set_mtu'>mrs_udp_set_mtu</a>( uint32 value )</code>
+<p>UDPプロトコルのMTUの設定</p>
+<B>引数</B><BR> <table>
+<tr><td>value</td><td> MTUの値</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> uint32  <a name='mrs_udp_get_mtu'></a><a href='#mrs_udp_get_mtu'>mrs_udp_get_mtu</a>()</code>
+<p>UDPプロトコルのMTUの取得</p>
+<B>引数</B><BR>なし<BR>
+<B>返り値</B><BR>
+MTUの値<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_mru_set_client_peer_limit'></a><a href='#mrs_mru_set_client_peer_limit'>mrs_mru_set_client_peer_limit</a>( uint32 value )</code>
+<p>MRUプロトコルのクライアント接続の上限値の設定</p>
+<B>引数</B><BR> <table>
+<tr><td>value</td><td> 上限値</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> uint32  <a name='mrs_mru_get_client_peer_limit'></a><a href='#mrs_mru_get_client_peer_limit'>mrs_mru_get_client_peer_limit</a>()</code>
+<p>MRUプロトコルのクライアント接続の上限値の取得</p>
+<B>引数</B><BR>なし<BR>
+<B>返り値</B><BR>
+上限値<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> void  <a name='mrs_mru_set_sendq_size'></a><a href='#mrs_mru_set_sendq_size'>mrs_mru_set_sendq_size</a>( uint32 value )</code>
+<p>MRUプロトコルの送信キューサイズの設定</p>
+<B>引数</B><BR> <table>
+<tr><td>value</td><td> 送信キューサイズ</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'> uint32  <a name='mrs_mru_get_sendq_size'></a><a href='#mrs_mru_get_sendq_size'>mrs_mru_get_sendq_size</a>()</code>
+<p>MRUプロトコルの送信キューサイズの取得</p>
+<B>引数</B><BR>なし<BR>
+<B>返り値</B><BR>
+送信キューサイズ<BR>
+</div> <!-- fn/cbfn end --><BR>
+<h2>関数の引数に使う各種の列挙体</h2>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><a name='MrsLogLevel'></a><code style='font-size:16px;'><a href='#MrsLogLevel'>MrsLogLevel</a></code></a><table>
+<p>ログ出力レベルの種類を定義します</p>
+<tr><td>MRS_LOG_LEVEL_EMERG</td><td>システムが使用不可</td></tr>
+<tr><td>MRS_LOG_LEVEL_ALERT</td><td>直ちに行動を起こさなければならない</td></tr>
+<tr><td>MRS_LOG_LEVEL_CRIT</td><td>危険な状態</td></tr>
+<tr><td>MRS_LOG_LEVEL_ERR</td><td>エラー</td></tr>
+<tr><td>MRS_LOG_LEVEL_WARNING</td><td>警告</td></tr>
+<tr><td>MRS_LOG_LEVEL_NOTICE</td><td>通常だが重要な状態</td></tr>
+<tr><td>MRS_LOG_LEVEL_INFO</td><td>参考にすべきメッセージ</td></tr>
+<tr><td>MRS_LOG_LEVEL_DEBUG</td><td>デバッグレベルのメッセージ</td></tr>
+</table></div> <!-- enum end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><a name='MrsConnectionType'></a><code style='font-size:16px;'><a href='#MrsConnectionType'>MrsConnectionType</a></code></a><table>
+<p>MRSで利用可能なトランスポート層プロトコルの種類を定義します</p>
+<tr><td>MRS_CONNECTION_TYPE_NONE</td><td>未定義</td></tr>
+<tr><td>MRS_CONNECTION_TYPE_TCP</td><td>TCP</td></tr>
+<tr><td>MRS_CONNECTION_TYPE_UDP</td><td>UDP(RUDPを使う場合はこの値を選択します)</td></tr>
+<tr><td>MRS_CONNECTION_TYPE_WS</td><td>WS(通常のWebSocketを使う場合はこの値を選択します)</td></tr>
+<tr><td>MRS_CONNECTION_TYPE_WSS</td><td>WSS(通信経路が暗号化されたWebSocketを使う場合はこの値を選択します)</td></tr>
+<tr><td>MRS_CONNECTION_TYPE_TCP_SSL</td><td>TCP_SSL(通信経路が暗号化されたTCPを使う場合はこの値を選択します)</td></tr>
+<tr><td>MRS_CONNECTION_TYPE_MRU</td><td>Monobit独自R-UDP</td></tr>
+</table></div> <!-- enum end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><a name='MrsCipherType'></a><code style='font-size:16px;'><a href='#MrsCipherType'>MrsCipherType</a></code></a><table>
+<p>暗号化通信に使う鍵交換の方式を定義します</p>
+<tr><td>MRS_CIPHER_TYPE_NONE</td><td>未定義</td></tr>
+<tr><td>MRS_CIPHER_TYPE_ECDH</td><td>ECDH(楕円曲線ディフィーヘルマン)</td></tr>
+</table></div> <!-- enum end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><a name='MrsError'></a><code style='font-size:16px;'><a href='#MrsError'>MrsError</a></code></a><table>
+<p>MRS APIのエラーコードを定義します</p>
+<tr><td>MRS_NO_ERROR</td><td>エラーなし</td></tr>
+<tr><td>MRS_ENOENT</td><td>ファイルやディレクトリが存在しない</td></tr>
+<tr><td>MRS_ENOMEM</td><td>メモリが不足している</td></tr>
+<tr><td>MRS_EACCES</td><td>アクセス権限が不足している(1024以下のポート番号など)</td></tr>
+<tr><td>MRS_EMFILE</td><td>これ以上ファイル(ソケット)を開けない(ulimitの設定が必要です)</td></tr>
+<tr><td>MRS_EADDRINUSE</td><td>ポート番号がすでに使われている</td></tr>
+<tr><td>MRS_EADDRNOTAVAIL</td><td>クライアント側で必要なポート番号を使い切っている</td></tr>
+<tr><td>MRS_ENETUNREACH</td><td>到達できないネットワークである</td></tr>
+<tr><td>MRS_ETIMEDOUT</td><td>操作はタイムアウトした</td></tr>
+<tr><td>MRS_EHOSTUNREACH</td><td>到達できないホストである</td></tr>
+<tr><td>MRS_ECONNECTIONTYPE</td><td>不正な接続の種別コード (MrsConnectionの値が不正)</td></tr>
+<tr><td>MRS_EBACKLOG</td><td>mrs_server_create 関数のbacklogの値が不正(大きすぎる)</td></tr>
+<tr><td>MRS_ECONNECTIONNUM</td><td>mrs_get_connection_num_hard_limit 関数の値より多いクライアントを生成した</td></tr>
+</table></div> <!-- enum end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><a name='MrsConnectionError'></a><code style='font-size:16px;'><a href='#MrsConnectionError'>MrsConnectionError</a></code></a><table>
+<p>MrsConnectionに設定したエラーコールバック関数に渡されるエラー種別コードを定義します</p>
+<tr><td>MRS_CONNECT_ERROR</td><td>MrsConnectionにおいてTCPのconnect()に失敗した(サーバがポートを開いていないなど)</td></tr>
+<tr><td>MRS_CONNECT_TIMEOUT</td><td>MrsConnectionにおいてTCPのconnect()の時間切れ(サーバマシン自体が起動していないか、アドレスを間違えているなど)</td></tr>
+<tr><td>MRS_WRITE_ERROR</td><td>接続に対して書き込みができなかった</td></tr>
+<tr><td>MRS_KEY_EXCHANGE_REQUEST_ERROR</td><td>鍵交換の開始要求を送信できなかった</td></tr>
+<tr><td>MRS_KEY_EXCHANGE_RESPONSE_ERROR</td><td>鍵交換の返信を送信できなかった</td></tr>
+<tr><td>MRS_PEER_CONNECTION_HARD_LIMIT_OVER</td><td>接続相手がコネクション上限に達している</td></tr>
+<tr><td>MRS_CONNECTION_READBUF_SIZE_OVER</td><td>読み込みバッファを越えたデータを受信した</td></tr>
+<tr><td>MRS_KEEPALIVE_TIMEOUT</td><td>一定時間無通信状態によるタイムアウトを検出した</td></tr>
+<tr><td>MRS_PROTOCOL_ERROR</td><td>接続相手のプロトコルが不正</td></tr>
+<tr><td>MRS_READ_INVALID_RECORD_ERROR</td><td>読み込んだレコードが不正</td></tr>
+<tr><td>MRS_LISTEN_ERROR</td><td>ソケットの待ち受け処理に失敗した(既に同じポートが使われているなど)</td></tr>
+<tr><td>MRS_RESOLVE_ADDRESS_ERROR</td><td>アドレス解決処理に失敗した</td></tr>
+<tr><td>MRS_RESOLVE_ADDRESS_TIMEOUT</td><td>アドレス解決処理の時間切れ</td></tr>
+<tr><td>MRS_WRITE_ERROR_MRU_OVER_MTU</td><td>MTU以上に長いデータを送ろうとした(MRUのみ)</td></tr>
+<tr><td>MRS_WRITE_ERROR_MRU_SENDQ_FULL</td><td>送信キューがあふれている(MRUのみ)</td></tr>
+</table></div> <!-- enum end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><a name='MrsRecordOption'></a><code style='font-size:16px;'><a href='#MrsRecordOption'>MrsRecordOption</a></code></a><table>
+<p>レコードの送信オプション</p>
+<tr><td>MRS_RECORD_OPTION_NONE</td><td>オプションを設定しない</td></tr>
+<tr><td>MRS_RECORD_OPTION_ON_CRYPT</td><td>レコードを暗号化して送信する</td></tr>
+<tr><td>MRS_RECORD_OPTION_UDP_UNRELIABLE</td><td>UDPにおいて信頼性保証(再送処理)をせずにレコードを送信する</td></tr>
+<tr><td>MRS_RECORD_OPTION_UDP_UNSEQUENCED</td><td>UDPにおいて到着順序保証をせずにレコードを送信する</td></tr>
+</table></div> <!-- enum end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><a name='MrsPayloadType'></a><code style='font-size:16px;'><a href='#MrsPayloadType'>MrsPayloadType</a></code></a><table>
+<p>アプリケーションが利用可能なペイロードの種別コードの範囲を定義します</p>
+<tr><td>MRS_PAYLOAD_TYPE_BEGIN</td><td>0x00. アプリケーションが利用可能な最小の値</td></tr>
+<tr><td>MRS_PAYLOAD_TYPE_END</td><td>0xff. アプリケーションが利用可能な最大の値</td></tr>
+</table></div> <!-- enum end --><BR>
+<h2>関数の引数に与えるコールバック関数</h2>
+</table></div> <!-- enum end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'>typedef void ( *<a name='MrsLogOutputCallback'></a><a href='#MrsLogOutputCallback'>MrsLogOutputCallback</a>)( MrsLogLevel level, const char* msg )</code>
+<p>ログが1回出力されるごとに呼び出されるコールバック関数</p>
+<B>引数</B><BR> <table>
+<tr><td>level</td><td> mrs_output_log 関数の呼び出し時に指定されたログ出力レベルの値</td></tr>
+<tr><td>msg</td><td> 出力されたログメッセージ</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'>typedef void ( *<a name='MrsNewConnectionCallback'></a><a href='#MrsNewConnectionCallback'>MrsNewConnectionCallback</a>)( MrsServer server, void* server_data, MrsConnection client )</code>
+<p>新しい接続を受け入れたときに呼び出されるコールバック関数</p>
+<B>引数</B><BR> <table>
+<tr><td>server</td><td> どのサーバに対する接続要求かをあらわすMrsServer</td></tr>
+<tr><td>server_data</td><td> mrs_server_set_data 関数で設定されたアプリケーションの任意のデータポインタ</td></tr>
+<tr><td>client</td><td> 新しく受け入れた接続</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'>typedef void ( *<a name='MrsConnectCallback'></a><a href='#MrsConnectCallback'>MrsConnectCallback</a>)( MrsConnection connection, void* connection_data )</code>
+<p>サーバへの接続に成功した時に呼び出されるコールバック関数</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> サーバへの接続処理に成功した接続</td></tr>
+<tr><td>connection_data</td><td> 接続に対してアプリケーションが設定した任意のデータポインタ</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'>typedef void ( *<a name='MrsDisconnectCallback'></a><a href='#MrsDisconnectCallback'>MrsDisconnectCallback</a>)( MrsConnection connection, void* connection_data )</code>
+<p>接続が切断したときに呼び出されるコールバック関数</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> 切断が発生した接続</td></tr>
+<tr><td>connection_data</td><td> 接続に対してアプリケーションが設定した任意のデータポインタ</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'>typedef void ( *<a name='MrsErrorCallback'></a><a href='#MrsErrorCallback'>MrsErrorCallback</a>)( MrsConnection connection, void* connection_data, MrsConnectionError status )</code>
+<p>接続でエラーが発生したときに呼び出されるコールバック関数</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> エラーが発生した接続</td></tr>
+<tr><td>connection_data</td><td> 接続に対してアプリケーションが設定した任意のデータポインタ</td></tr>
+<tr><td>status</td><td> エラー種別コード</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'>typedef void ( *<a name='MrsReadRecordCallback'></a><a href='#MrsReadRecordCallback'>MrsReadRecordCallback</a>)( MrsConnection connection, void* connection_data, uint32 seqnum, uint16 options, uint16 payload_type, const void* payload, uint32 payload_len )</code>
+<p>レコードを1個受信したときに呼び出されるコールバック関数</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> レコードを受信した接続</td></tr>
+<tr><td>connection_data</td><td> 接続に対してアプリケーションが設定した任意のデータポインタ</td></tr>
+<tr><td>seqnum</td><td> 送信側が付与した通し番号</td></tr>
+<tr><td>options</td><td> 送信側が設定した送信オプション</td></tr>
+<tr><td>payload_type</td><td> 送信側が設定したペイロード種別</td></tr>
+<tr><td>payload</td><td> 送信されたデータ</td></tr>
+<tr><td>payload_len</td><td> 送信されたデータの長さ(バイト数)</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'>typedef void ( *<a name='MrsReadCallback'></a><a href='#MrsReadCallback'>MrsReadCallback</a>)( MrsConnection connection, void* connection_data, const void* data, uint32 data_len )</code>
+<p>バイナリデータを受信したときに呼び出されるコールバック関数</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> レコードを受信した接続</td></tr>
+<tr><td>connection_data</td><td> 接続に対してアプリケーションが設定した任意のデータポインタ</td></tr>
+<tr><td>data</td><td> 送信されたデータ</td></tr>
+<tr><td>data_len</td><td> 送信されたデータの長さ(バイト数)</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
+<div style='border:1px solid #ccc; padding:8px 8px 8px 8px; '><code style='font-size:16px;'>typedef void ( *<a name='MrsKeyExchangeCallback'></a><a href='#MrsKeyExchangeCallback'>MrsKeyExchangeCallback</a>)( MrsConnection connection, void* connection_data )</code>
+<p>鍵交換が完了したときに呼ばれるコールバック関数</p>
+<B>引数</B><BR> <table>
+<tr><td>connection</td><td> 鍵交換が完了した接続</td></tr>
+<tr><td>connection_data</td><td> 接続に対してアプリケーションが設定した任意のデータポインタ</td></tr>
+</table>
+<B>返り値</B><BR>
+なし<BR>
+</div> <!-- fn/cbfn end --><BR>
