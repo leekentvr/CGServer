@@ -27,11 +27,20 @@ endif
 CFLAGS=-std=c++14 -I. -g -O0 $(MACVERFLAG) $(CFLAGS_ADD) -Wall
 
 
-all: echosv cgsv 
+all: echosv cgsv echocl echo_server echo_client
 
 echosv: echosv.cpp
 	$(GPP) -o echosv $(CFLAGS) echosv.cpp $(LIBFLAGS)
 cgsv: cgsv.cpp
 	$(GPP) -o cgsv $(CFLAGS) cgsv.cpp $(LIBFLAGS) 
+echocl: echocl.cpp
+	$(GPP) -o echocl $(CFLAGS) echocl.cpp $(LIBFLAGS)
+
+echo_server: echo_server.cpp
+	$(GPP) -o echo_server $(CFLAGS) echo_server.cpp $(LIBFLAGS)
+
+echo_client: echo_client.cpp
+	$(GPP) -o echo_client $(CFLAGS) echo_client.cpp $(LIBFLAGS)
+
 
 

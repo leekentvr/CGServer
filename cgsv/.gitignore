@@ -2,3 +2,7 @@ echosv
 cgsv
 cgsv.dSYM
 echosv.dSYM
+echo_server
+echo_client
+echo_server.dSYM
+echo_client.dSYM
