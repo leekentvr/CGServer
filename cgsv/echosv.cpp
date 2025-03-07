@@ -2,8 +2,24 @@
 #include <stdio.h>
 
 
+std::string connection_type_to_string( MrsConnection connection ){
+    MrsConnectionType type = mrs_connection_get_type( connection );
+    switch ( type ){
+    case MRS_CONNECTION_TYPE_NONE:{ return "NONE"; }
+    case MRS_CONNECTION_TYPE_TCP:{ return "TCP"; }
+    case MRS_CONNECTION_TYPE_UDP:{ return "UDP"; }
+    case MRS_CONNECTION_TYPE_WS:{ return "WS"; }
+    case MRS_CONNECTION_TYPE_WSS:{ return "WSS"; }
+    case MRS_CONNECTION_TYPE_TCP_SSL:{ return "TCP_SSL"; }
+    case MRS_CONNECTION_TYPE_MRU:{ return "MRU"; }
+    }
+    return "INVALID";
+}
+
+
 void on_connect( MrsConnection connection ){
-    fprintf(stderr,"on_connect\n");
+    fprintf(stderr,"on_connect %s local_mrs_version=0x%x remote_mrs_version=0x%x\n",
+        connection_type_to_string( connection ).c_str(), mrs_get_version( MRS_VERSION_KEY ), mrs_connection_get_remote_version( connection, MRS_VERSION_KEY ) );
 }
 
 void on_disconnect( MrsConnection connection, void* connection_data ){
@@ -12,8 +28,10 @@ void on_disconnect( MrsConnection connection, void* connection_data ){
 
 void on_error( MrsConnection connection, void* connection_data, MrsConnectionError status ){
     fprintf(stderr,"on_error: %s\n", mrs_get_error_string(mrs_get_last_error()));
-    fprintf(stderr,"quitting\n");
-    exit(1);
+    if(mrs_get_last_error()!=MRS_NO_ERROR) {
+        fprintf(stderr,"quitting by error\n");
+        exit(1);
+    }
 }
 
 // Callback function when receiving a record from client. Many records can be contained in a TCP packet,
@@ -46,7 +64,7 @@ int main( int argc, char** argv ){
     mrs_initialize();
 
     MrsServer tcp_server=NULL;
-    tcp_server = mrs_server_create( MRS_CONNECTION_TYPE_TCP, "0.0.0.0", 5333, 10 ); // listen addr and port.
+    tcp_server = mrs_server_create( MRS_CONNECTION_TYPE_TCP, "0.0.0.0", 22222, 10 ); // listen addr and port.
     if(!tcp_server){
         fprintf(stderr,"TCP mrs_server_create: %s", mrs_get_error_string( mrs_get_last_error() ) );
         return 0;

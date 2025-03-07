@@ -32,7 +32,7 @@ void on_read_record(MrsConnection connection, void* connection_data, uint32 seqn
 
 int main(int argc, char** argv) {
     const char* host = "127.0.0.1";
-    int port = 5333;
+    int port =22222;
 
     if (argc > 1) host = argv[1];
     if (argc > 2) port = atoi(argv[2]);

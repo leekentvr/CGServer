@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
 
     // Create TCP server
     MrsServer tcp_server = NULL;
-    tcp_server = mrs_server_create(MRS_CONNECTION_TYPE_TCP, "0.0.0.0", 5333, 10); // Listen address and port
+    tcp_server = mrs_server_create(MRS_CONNECTION_TYPE_TCP, "0.0.0.0", 22222, 10); // Listen address and port
     if (!tcp_server) {
         fprintf(stderr, "TCP server creation error: %s\n", mrs_get_error_string(mrs_get_last_error()));
         return 1;

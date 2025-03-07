@@ -1,0 +1,71 @@
+# Unity用の.gitignoreファイル
+
+# Unity生成ファイル
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+
+# MemoryCaptures（プロファイリング結果）
+[Mm]emoryCaptures/
+
+# Asset meta data（アセットメタデータ）は含める必要があります
+!**/*.meta
+
+# Visual Studio / MonoDevelop / Rider生成ファイル
+.vs/
+.idea/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Unity3D生成メタファイル
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+
+# Unity3Dクラッシュレポート
+sysinfo.txt
+
+# ビルド生成ファイル
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# クラッシュダンプ
+*.stackdump
+
+# OSが生成するファイル
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+ehthumbs.db
+Thumbs.db
+
+# ログファイル
+*.log
+
+# Crashlytics生成ファイル
+crashlytics-build.properties
+
+# プロジェクト固有の無視ファイル（必要に応じてカスタマイズ）
+# /Assets/AssetStoreTools*
+# /[Aa]ssets/Plugins/Editor/JetBrains*
