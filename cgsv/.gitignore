@@ -8,3 +8,11 @@ echo_server.dSYM
 echo_client.dSYM
 echocl
 echocl.dSYM
+
+# Windows build artifacts
+*.exe
+*.exp
+*.lib
+*.obj
+*.pdb
+*.ilk

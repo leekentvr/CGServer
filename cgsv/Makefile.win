@@ -1,0 +1,31 @@
+CXX=cl.exe
+CXXFLAGS=/nologo /EHsc /std:c++14 /I. /I.\mrs_2.0.0\mrs\include /Od /W3 /MTd /Zi \
+    /I"C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\um" \
+    /I"C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\shared" \
+    /I"C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\ucrt"
+
+LIBDIR=.\mrs_2.0.0\mrs\library\mrs\windows\enet_uv_openssl_1.1.1\2017\MT\x64\Debug
+LIBS=$(LIBDIR)\mrs.lib $(LIBDIR)\enet.lib $(LIBDIR)\ssl.lib $(LIBDIR)\crypto.lib $(LIBDIR)\uv.lib \
+    ws2_32.lib uuid.lib winmm.lib advapi32.lib crypt32.lib user32.lib iphlpapi.lib psapi.lib userenv.lib
+
+TARGETS=echosv.exe cgsv.exe echocl.exe echo_server.exe echo_client.exe
+
+all: $(TARGETS)
+
+echosv.exe: echosv.cpp
+    $(CXX) $(CXXFLAGS) /Fe:$@ echosv.cpp $(LIBS)
+
+cgsv.exe: cgsv.cpp
+    $(CXX) $(CXXFLAGS) /Fe:$@ cgsv.cpp $(LIBS)
+
+echocl.exe: echocl.cpp
+    $(CXX) $(CXXFLAGS) /Fe:$@ echocl.cpp $(LIBS)
+
+echo_server.exe: echo_server.cpp
+    $(CXX) $(CXXFLAGS) /Fe:$@ echo_server.cpp $(LIBS)
+
+echo_client.exe: echo_client.cpp
+    $(CXX) $(CXXFLAGS) /Fe:$@ echo_client.cpp $(LIBS)
+
+clean:
+    del *.exe *.obj *.pdb *.ilk
