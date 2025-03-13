@@ -4,20 +4,21 @@
 #include <algorithm>
 
 // Global variable to manage client connections
-static std::vector<MrsConnection> g_clients;
+static std::vector<MrsConnection> g_all_clients;
 
-void on_connect(MrsConnection connection) {
-    fprintf(stderr, "Client connected: %p\n", connection);
-}
+// Global variable for all AreaManagers / Clients
+//static std::vector<MrsConnection> g_clients_areamanagers;
+//static std::vector<MrsConnection> g_clients_viewers;
+
 
 void on_disconnect(MrsConnection connection, void* connection_data) {
     fprintf(stderr, "Client disconnected: %p\n", connection);
     
     // Remove disconnected client from the list
-    auto it = std::find(g_clients.begin(), g_clients.end(), connection);
-    if (it != g_clients.end()) {
-        g_clients.erase(it);
-        fprintf(stderr, "Client removed from list. Current connections: %zu\n", g_clients.size());
+    auto it = std::find(g_all_clients.begin(), g_all_clients.end(), connection);
+    if (it != g_all_clients.end()) {
+        g_all_clients.erase(it);
+        fprintf(stderr, "Client removed from list. Current connections: %zu\n", g_all_clients.size());
     }
 }
 
@@ -26,10 +27,10 @@ void on_error(MrsConnection connection, void* connection_data, MrsConnectionErro
     
     // Remove client with error from the list
     if (connection) {
-        auto it = std::find(g_clients.begin(), g_clients.end(), connection);
-        if (it != g_clients.end()) {
-            g_clients.erase(it);
-            fprintf(stderr, "Client removed from list due to error. Current connections: %zu\n", g_clients.size());
+        auto it = std::find(g_all_clients.begin(), g_all_clients.end(), connection);
+        if (it != g_all_clients.end()) {
+            g_all_clients.erase(it);
+            fprintf(stderr, "Client removed from list due to error. Current connections: %zu\n", g_all_clients.size());
         }
     }
 }
@@ -39,17 +40,39 @@ void on_read_record(MrsConnection connection, void* connection_data, uint32 seqn
     fprintf(stderr, "Record received: seqnum=%u, options=0x%02X, payload_type=0x%02X, payload_len=%u\n", 
             seqnum, options, payload_type, payload_len);
 
-    switch (payload_type) {
-    case 0x01:
-        fprintf(stderr, "Type 0x01 record received: '%.*s' (length: %u)\n", payload_len, (const char*)payload, payload_len);
-        
-        // Broadcast to all clients
-        for (auto client : g_clients) {
+switch (payload_type) {
+    case 0x00:      //NewSkeleton = 0, 
+        // Forward skeletons to all clients. Not to Area Managers.
+        for (auto client : g_all_clients) {
             // Don't send back to the source client
             if (client != connection) {
                 mrs_write_record(client, options, payload_type, payload, payload_len);
             }
         }
+        break;
+    case 0x01: // HMDPosition = 1,
+        // Forward HMD positions to all AreaManagers
+        
+        break;
+    case 0x02:      //SimpleString = 2,
+        // Forward strings to everyone
+        fprintf(stderr, "Type 0x02 record received: '%.*s' (length: %u)\n", payload_len, (const char*)payload, payload_len);
+
+        // Broadcast to all clients
+        for (auto client : g_all_clients) {
+            mrs_write_record(client, options, payload_type, payload, payload_len);
+            
+            // Don't send back to the source client
+            // if (client != connection) {
+            //     mrs_write_record(client, options, payload_type, payload, payload_len);
+            // }
+        }
+        break;
+    case 0x03:      //IdentifySelfToServer = 3,
+        // Only used for Identification on server. No forwarding.
+        break;
+    case 0x04:      //NewRoomHost = 4
+        // Forward to all clients and area managers.
         break;
     default:
         break;
@@ -66,10 +89,8 @@ void on_new_connection(MrsServer server, void* server_data, MrsConnection client
     mrs_set_read_record_callback(client, on_read_record);
     
     // Add to client list
-    g_clients.push_back(client);
-    fprintf(stderr, "Client added to list. Current connections: %zu\n", g_clients.size());
-    
-    on_connect(client);
+    g_all_clients.push_back(client);
+    fprintf(stderr, "Client added to list. Current connections: %zu\n", g_all_clients.size());
 }
 
 int main(int argc, char** argv) {
