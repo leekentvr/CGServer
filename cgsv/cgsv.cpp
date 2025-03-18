@@ -2,27 +2,40 @@
 #include <stdio.h>
 #include <vector>
 #include <algorithm>
+#include <sstream>
 
-// Global variable to manage client connections
-static std::vector<MrsConnection> g_all_clients;
-
-// Global variable for all AreaManagers / Clients
-static std::vector<MrsConnection> g_clients_areamanagers;
-static std::vector<MrsConnection> g_clients_viewers;
 
 // Define a class to encapsulate MrsConnection and additional data
 class ClientInfo {
 public:
     MrsConnection connection;
-    std::string room;
+    std::string type;
+    std::string localroom;
+    std::vector<std::string> subscriptions;
 
-    ClientInfo(MrsConnection conn, const std::string& roomName) : connection(conn), room(roomName) {}
+    ClientInfo(MrsConnection conn) : connection(conn) {}
 
     // Equality operator to compare ClientInfo objects based on connection
     bool operator==(const MrsConnection& conn) const {
         return connection == conn;
     }
 };
+
+class RoomInfo {
+public:
+    std::string roomName;
+    std::vector<std::string> subscriptions;
+
+    RoomInfo(std::string roomNameInternal) : roomName(roomNameInternal) {}
+     
+    // Equality operator to compare ClientInfo objects based on connection
+    bool operator==(const std::string& roomNameInternal) const {
+        return roomName == roomNameInternal;
+    }
+};
+
+// Global variable to manage client connections
+static std::vector<ClientInfo> g_all_clients;
 
 void on_disconnect(MrsConnection connection, void* connection_data) {
     fprintf(stderr, "Client disconnected: %p\n", connection);
@@ -32,20 +45,6 @@ void on_disconnect(MrsConnection connection, void* connection_data) {
     if (it != g_all_clients.end()) {
         g_all_clients.erase(it);
         fprintf(stderr, "Client removed from general list. Current connections: %zu\n", g_all_clients.size());
-    }
-
-    // Remove disconnected client from the area managers
-    auto it = std::find(g_clients_areamanagers.begin(), g_clients_areamanagers.end(), connection);
-    if (it != g_clients_areamanagers.end()) {
-        g_clients_areamanagers.erase(it);
-        fprintf(stderr, "Area Manager removed from list. Current area manager connections: %zu\n", g_clients_areamanagers.size());
-    }
-
-    // Remove disconnected client from all viewers
-    auto it = std::find(g_clients_viewers.begin(), g_clients_viewers.end(), connection);
-    if (it != g_clients_viewers.end()) {
-        g_clients_viewers.erase(it);
-        fprintf(stderr, "Viewer removed from list. Current viewer connections: %zu\n", g_clients_viewers.size());
     }
 }
 
@@ -59,95 +58,102 @@ void on_error(MrsConnection connection, void* connection_data, MrsConnectionErro
             g_all_clients.erase(it);
             fprintf(stderr, "Client removed from list due to error. Current connections: %zu\n", g_all_clients.size());
         }
-
-        // Remove disconnected client from the area managers
-        auto it = std::find(g_clients_areamanagers.begin(), g_clients_areamanagers.end(), connection);
-        if (it != g_clients_areamanagers.end()) {
-            g_clients_areamanagers.erase(it);
-            fprintf(stderr, "Area Manager removed from list due to error. Current area manager connections: %zu\n", g_clients_areamanagers.size());
-        }
-
-        // Remove disconnected client from all viewers
-        auto it = std::find(g_clients_viewers.begin(), g_clients_viewers.end(), connection);
-        if (it != g_clients_viewers.end()) {
-            g_clients_viewers.erase(it);
-            fprintf(stderr, "Viewer removed from list due to error. Current viewer connections: %zu\n", g_clients_viewers.size());
-        }
     }
+}
+
+ClientInfo* find_client(MrsConnection connection) {
+	auto it = std::find(g_all_clients.begin(), g_all_clients.end(), connection);
+	if (it != g_all_clients.end()) {
+		return &(*it);
+	}
+	return nullptr;
 }
 
 // Callback function when receiving a record from client
 void on_read_record(MrsConnection connection, void* connection_data, uint32 seqnum, uint16 options, uint16 payload_type, const void* payload, uint32 payload_len) {
-    fprintf(stderr, "Record received: seqnum=%u, options=0x%02X, payload_type=0x%02X, payload_len=%u\n", 
-            seqnum, options, payload_type, payload_len);
+    fprintf(stderr, "Record received: seqnum=%u, options=0x%02X, payload_type=0x%02X, payload_len=%u\n",
+        seqnum, options, payload_type, payload_len);
 
     switch (payload_type) {
-        case 0x00: { // NewSkeleton = 0
-            // Forward skeletons to all clients. Not to Area Managers.
-            for (auto client : g_all_clients) {
-                // Don't send back to the source client
-                if (client != connection) {
-                    mrs_write_record(client, options, payload_type, payload, payload_len);
+    case 0x00: { // NewSkeleton = 0
+        // Forward skeletons to all clients except the source client
+        ClientInfo* thisClient = find_client(connection);
+        for (const auto& client : g_all_clients) {
+            if (client.connection != connection) {
+                if (std::find(client.subscriptions.begin(), client.subscriptions.end(), thisClient->localroom) != client.subscriptions.end()) {
+                    mrs_write_record(client.connection, options, payload_type, payload, payload_len);
                 }
             }
-            break;
         }
-        case 0x01: { // HMDPosition = 1
-            // Forward HMD positions to all AreaManagers
-            for (auto client : g_clients_areamanagers) {
-                if (client != connection) {
-                    mrs_write_record(client, options, payload_type, payload, payload_len);
-                }
-            }
-            break;
-        }
-        case 0x02: { // SimpleString = 2
-            // Forward strings to everyone
-            fprintf(stderr, "Type 0x02 record received: '%.*s' (length: %u)\n", payload_len, (const char*)payload, payload_len);
+        break;
+    }
+    case 0x01: { // HMDPosition = 1
+        // Forward HMD positions to all AreaManagers
 
-            // Broadcast to all clients
-            for (auto client : g_all_clients) {
-                mrs_write_record(client, options, payload_type, payload, payload_len);
-            }
-            break;
-        }
-        case 0x03: { // IdentifySelfToServer = 3
-            fprintf(stderr, "Type 0x03 record received: '%.*s' (length: %u)\n", payload_len, (const char*)payload, payload_len);
+        break;
+    }
+    case 0x02: { // SimpleString = 2
+        // Forward strings to everyone
+        fprintf(stderr, "Type 0x02 record received: '%.*s' (length: %u)\n", payload_len, (const char*)payload, payload_len);
 
-            // Convert payload to std::string for easier manipulation
-            std::string payload_str((const char*)payload, payload_len);
+        // Broadcast to all clients
+        for (const auto& client : g_all_clients) {
+            mrs_write_record(client.connection, options, payload_type, payload, payload_len);
+        }
+        break;
+    }
+    case 0x03: { // IdentifySelfToServer = 3
+        fprintf(stderr, "Type 0x03 record received: '%.*s' (length: %u)\n", payload_len, (const char*)payload, payload_len);
 
-            // Check if the payload contains specific substrings
-            if (payload_str.find("AreaManager") != std::string::npos) {
-                // Add to area managers list if not already present
-                if (std::find(g_clients_areamanagers.begin(), g_clients_areamanagers.end(), connection) == g_clients_areamanagers.end()) {
-                    g_clients_areamanagers.push_back(connection);
-                    fprintf(stderr, "Client added to Area Managers list. Current area manager connections: %zu\n", g_clients_areamanagers.size());
+        // Convert payload to std::string for easier manipulation
+        std::string payload_str((const char*)payload, payload_len);
+
+        // Split the payload_str by comma
+        std::stringstream ss(payload_str);
+        std::string type, localroom;
+        if (std::getline(ss, type, ',') && std::getline(ss, localroom, ',')) {
+            for (auto& client : g_all_clients) {
+                if (client.connection == connection) {
+                    client.type = type;
+                    client.localroom = localroom;
+                    fprintf(stderr, "Client type updated: '%s', local room updated: '%s'\n", type.c_str(), localroom.c_str());
+                    if (type == "HMD") {
+                        client.subscriptions.push_back(localroom);
+                        fprintf(stderr, "Client subscribed to room '%s' '\n", localroom.c_str());
+                    }
+                    break;
                 }
-            } else if (payload_str.find("Viewer") != std::string::npos) {
-                // Add to viewers list if not already present
-                if (std::find(g_clients_viewers.begin(), g_clients_viewers.end(), connection) == g_clients_viewers.end()) {
-                    g_clients_viewers.push_back(connection);
-                    fprintf(stderr, "Client added to Viewers list. Current viewer connections: %zu\n", g_clients_viewers.size());
-                }
-            } else {
-                // Handle unknown identification
-                fprintf(stderr, "Received unknown identification: '%.*s' (length: %u)\n", payload_len, (const char*)payload, payload_len);
             }
-            break;
         }
-        case 0x04: { // NewRoomHost = 4
-            // Forward to all clients and area managers.
-            for (auto client : g_all_clients) {
-                mrs_write_record(client, options, payload_type, payload, payload_len);
-            }
-            for (auto client : g_clients_areamanagers) {
-                mrs_write_record(client, options, payload_type, payload, payload_len);
-            }
-            break;
+        else {
+            // Handle unknown identification
+            fprintf(stderr, "Received unknown identification: '%.*s' (length: %u)\n", payload_len, (const char*)payload, payload_len);
         }
-        default:
-            break;
+        break;
+    }
+    case 0x04: { // NewRoomHost = 4
+        // Forward to all clients and area managers
+        for (const auto& client : g_all_clients) {
+            mrs_write_record(client.connection, options, payload_type, payload, payload_len);
+        }
+        break;
+    }
+    case 0x05: { // RequestRoomList = 5
+        std::string availableRooms;
+
+        for (const auto& client : g_all_clients) {
+			if (client.type == "AreaManager") {
+				availableRooms += client.localroom + ",";
+			}
+        }
+
+        // Send CSV string of available rooms back to requester
+        mrs_write_record(connection, options, payload_type, static_cast<const void*>(availableRooms.c_str()), availableRooms.size());
+        break;
+    }
+    default:
+        fprintf(stderr, "Unknown payload type: 0x%02X\n", payload_type);
+        break;
     }
 }
 
@@ -161,7 +167,7 @@ void on_new_connection(MrsServer server, void* server_data, MrsConnection client
     mrs_set_read_record_callback(client, on_read_record);
     
     // Add to client list
-    g_all_clients.push_back(client);
+    g_all_clients.emplace_back(client); // Add with empty room
     fprintf(stderr, "Client added to list. Current connections: %zu\n", g_all_clients.size());
 }
 
