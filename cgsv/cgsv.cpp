@@ -24,7 +24,6 @@ public:
 class RoomInfo {
 public:
     std::string roomName;
-    std::vector<std::string> subscriptions;
 
     RoomInfo(std::string roomNameInternal) : roomName(roomNameInternal) {}
      
@@ -138,7 +137,7 @@ void on_read_record(MrsConnection connection, void* connection_data, uint32 seqn
         }
         break;
     }
-    case 0x05: { // RequestRoomList = 5
+    case 0x05: { // RequestRoomList 
         std::string availableRooms;
 
         for (const auto& client : g_all_clients) {
@@ -149,6 +148,19 @@ void on_read_record(MrsConnection connection, void* connection_data, uint32 seqn
 
         // Send CSV string of available rooms back to requester
         mrs_write_record(connection, options, payload_type, static_cast<const void*>(availableRooms.c_str()), availableRooms.size());
+        break;
+    }
+    case 0x06: { // Subscribe to new room
+        fprintf(stderr, "Type 0x06 record received: '%.*s' (length: %u)\n", payload_len, (const char*)payload, payload_len);
+        // Convert payload to std::string for easier manipulation
+        std::string payload_str((const char*)payload, payload_len);
+
+
+        break;
+    }
+    case 0x07: { // Unsubscribe from room
+        fprintf(stderr, "Type 0x07 record received: '%.*s' (length: %u)\n", payload_len, (const char*)payload, payload_len);
+
         break;
     }
     default:
