@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <sstream>
 
-
 // Define a class to encapsulate MrsConnection and additional data
 class ClientInfo {
 public:
@@ -108,17 +107,22 @@ void on_read_record(MrsConnection connection, void* connection_data, uint32 seqn
         std::string payload_str((const char*)payload, payload_len);
 
         // Split the payload_str by comma
+		//"HMD,Unknown"  Example payload
         std::stringstream ss(payload_str);
         std::string type, localroom;
         if (std::getline(ss, type, ',') && std::getline(ss, localroom, ',')) {
             for (auto& client : g_all_clients) {
                 if (client.connection == connection) {
                     client.type = type;
-                    client.localroom = localroom;
-                    fprintf(stderr, "Client type updated: '%s', local room updated: '%s'\n", type.c_str(), localroom.c_str());
-                    if (type == "HMD") {
-                        client.subscriptions.push_back(localroom);
-                        fprintf(stderr, "Client subscribed to room '%s' '\n", localroom.c_str());
+					// If the localroom is unknown, do not update for clientInfo
+                    if (localroom != "Unknown") {
+                        client.localroom = localroom;
+                        fprintf(stderr, "Client type updated: '%s', local room updated: '%s'\n", type.c_str(), localroom.c_str());
+					}
+					else { // Room == Unknown
+                        if (type == "AreaManager") {
+                            fprintf(stderr, "\033[1;31mError: AreaManager must have a local room.\033[0m\n");
+                        }
                     }
                     break;
                 }
@@ -142,25 +146,61 @@ void on_read_record(MrsConnection connection, void* connection_data, uint32 seqn
 
         for (const auto& client : g_all_clients) {
 			if (client.type == "AreaManager") {
+                // Each AreaManager will have an assigned local room. 
+                // No two should be the same
 				availableRooms += client.localroom + ",";
 			}
         }
+        if (availableRooms.size() > 0) {
+            // Send CSV string of available rooms back to requester
+            mrs_write_record(connection, options, payload_type, static_cast<const void*>(availableRooms.c_str()), availableRooms.size());
+        }
 
-        // Send CSV string of available rooms back to requester
-        mrs_write_record(connection, options, payload_type, static_cast<const void*>(availableRooms.c_str()), availableRooms.size());
         break;
     }
-    case 0x06: { // Subscribe to new room
+    case 0x06: { // SubscribeToRoom Subscribe to new room
         fprintf(stderr, "Type 0x06 record received: '%.*s' (length: %u)\n", payload_len, (const char*)payload, payload_len);
         // Convert payload to std::string for easier manipulation
         std::string payload_str((const char*)payload, payload_len);
 
+            // Add payload string to client subscriptions list
+            for (auto& client : g_all_clients) {
+                if (client.connection == connection) {
+                    if (std::find(client.subscriptions.begin(), client.subscriptions.end(), payload_str) == client.subscriptions.end()) {
+                        client.subscriptions.push_back(payload_str);
+                        fprintf(stderr, "Client subscribed to room '%s'\n", payload_str.c_str());
+                    } else {
+                        fprintf(stderr, "Client already subscribed to room '%s'\n", payload_str.c_str());
+                    }
 
+                    // Print out all subscriptions
+                    fprintf(stderr, "Current subscriptions: ");
+                    for (const auto& subscription : client.subscriptions) {
+                        fprintf(stderr, "%s ", subscription.c_str());
+                    }
+                    fprintf(stderr, "\n");
+                    break;
+                }
+            }
         break;
     }
-    case 0x07: { // Unsubscribe from room
-        fprintf(stderr, "Type 0x07 record received: '%.*s' (length: %u)\n", payload_len, (const char*)payload, payload_len);
 
+    case 0x07: { // UnsubscribeFromRoom
+        fprintf(stderr, "Type 0x07 record received: '%.*s' (length: %u)\n", payload_len, (const char*)payload, payload_len);
+        // Convert payload to std::string for easier manipulation
+        std::string payload_str((const char*)payload, payload_len);
+
+        // Remove payload string from client subscriptions list
+        for (auto& client : g_all_clients) {
+            if (client.connection == connection) {
+                auto it = std::find(client.subscriptions.begin(), client.subscriptions.end(), payload_str);
+                if (it != client.subscriptions.end()) {
+                    client.subscriptions.erase(it);
+                    fprintf(stderr, "Client unsubscribed from room '%s'\n", payload_str.c_str());
+                }
+                break;
+            }
+        }
         break;
     }
     default:
