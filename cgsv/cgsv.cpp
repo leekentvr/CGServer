@@ -86,8 +86,16 @@ void on_read_record(MrsConnection connection, void* connection_data, uint32 seqn
         break;
     }
     case 0x01: { // HMDPosition = 1
-        // Forward HMD positions to all AreaManagers
-
+        // Forward HMD positions to relevant AreaManager
+        ClientInfo* thisClient = find_client(connection);
+        for (const auto& client : g_all_clients) {
+            if (client.type == "AreaManager") {
+                if (client.localroom == thisClient->localroom) {
+					// localrooms match, so forward HMD position to the AreaManager
+					mrs_write_record(client.connection, options, payload_type, payload, payload_len);
+                }
+            }
+        }
         break;
     }
     case 0x02: { // SimpleString = 2
@@ -118,6 +126,7 @@ void on_read_record(MrsConnection connection, void* connection_data, uint32 seqn
                     if (localroom != "Unknown") {
                         client.localroom = localroom;
                         fprintf(stderr, "Client type updated: '%s', local room updated: '%s'\n", type.c_str(), localroom.c_str());
+                        break;
 					}
 					else { // Room == Unknown
                         if (type == "AreaManager") {
@@ -135,10 +144,7 @@ void on_read_record(MrsConnection connection, void* connection_data, uint32 seqn
         break;
     }
     case 0x04: { // NewRoomHost = 4
-        // Forward to all clients and area managers
-        for (const auto& client : g_all_clients) {
-            mrs_write_record(client.connection, options, payload_type, payload, payload_len);
-        }
+        // TODO: Work out what this should do / how it should work
         break;
     }
     case 0x05: { // RequestRoomList 
